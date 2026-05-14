@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+	--font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html {
+	scroll-behavior: smooth;
+	color-scheme: dark;
+}
+
+body {
+	background-color: #06060e;
+	color: #e2e8f0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+	width: 6px;
+}
+::-webkit-scrollbar-track {
+	background: #06060e;
+}
+::-webkit-scrollbar-thumb {
+	background: #312e81;
+	border-radius: 3px;
+}
+
+/* Code block styling */
+.code-block {
+	background: linear-gradient(135deg, #0f0f1a 0%, #131325 100%);
+	border: 1px solid #1e1b4b;
+}
+
+.code-block code {
+	font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* Gradient text */
+.gradient-text {
+	background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #818cf8 100%);
+	background-size: 200% auto;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	animation: gradient-shift 4s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+	0%, 100% { background-position: 0% center; }
+	50% { background-position: 100% center; }
+}
+
+/* Glow effects */
+.glow-indigo {
+	box-shadow: 0 0 60px -12px rgba(99, 102, 241, 0.4);
+}
+
+.glow-card:hover {
+	box-shadow: 0 0 40px -8px rgba(99, 102, 241, 0.25);
+	border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Grid background */
+.grid-bg {
+	background-image:
+		linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+	background-size: 64px 64px;
+}
+
+/* Radial glow */
+.radial-glow {
+	background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent);
+}
+
+/* Comparison table row hover */
+.compare-row:hover {
+	background-color: rgba(99, 102, 241, 0.05);
+}
