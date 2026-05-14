@@ -4,15 +4,3 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
-
-linter:
-  rules:
-    - prefer_single_quotes
-    - annotate_overrides
-    - avoid_empty_else
-    - avoid_relative_lib_imports
-    - directives_ordering
-    - prefer_const_constructors
-    - prefer_const_declarations
-    - require_trailing_commas
-    - sort_child_properties_last
