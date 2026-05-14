@@ -4,6 +4,7 @@ import 'dart:ui' hide Point;
 
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
+import '../camera/camera_service.dart';
 import 'face_detector_interface.dart';
 
 /// ML Kit face detector — default implementation using Google ML Kit.
@@ -98,13 +99,19 @@ class MlKitFaceDetector implements FaceDetectorInterface {
       VivdImageFormat.nv21 => InputImageFormat.nv21,
       VivdImageFormat.bgra8888 => InputImageFormat.bgra8888,
       VivdImageFormat.yuv420 => InputImageFormat.yuv420,
-      VivdImageFormat.rgb888 => InputImageFormat.srgb,
+      VivdImageFormat.rgb888 => InputImageFormat.yuv420888,
     };
   }
 
   FaceDetection _convertFace(Face face) {
-    Offset? _toOffset(Point<int>? point) =>
-        point != null ? Offset(point.x.toDouble(), point.y.toDouble()) : null;
+    Offset? _toOffset(dynamic point) {
+      if (point == null) return null;
+      if (point is Point<int>) {
+        return Offset(point.x.toDouble(), point.y.toDouble());
+      }
+      if (point is Offset) return point;
+      return null;
+    }
 
     return FaceDetection(
       boundingBox: face.boundingBox,

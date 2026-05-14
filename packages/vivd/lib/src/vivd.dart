@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 
@@ -221,8 +222,11 @@ class Vivd {
     int? height,
   }) async {
     _ensureInitialized();
+    final bytes = faceBytes is Uint8List
+        ? faceBytes
+        : Uint8List.fromList(faceBytes as List<int>);
     return _faceIdentity!.register(
-      faceBytes as List<int>,
+      bytes,
       label: label,
       width: width,
       height: height,
@@ -240,8 +244,11 @@ class Vivd {
     int? height,
   }) async {
     _ensureInitialized();
+    final bytes = faceBytes is Uint8List
+        ? faceBytes
+        : Uint8List.fromList(faceBytes as List<int>);
     return _faceIdentity!.identify(
-      faceBytes as List<int>,
+      bytes,
       threshold: threshold,
       width: width,
       height: height,

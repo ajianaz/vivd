@@ -51,13 +51,14 @@ class LivenessEngine {
 
   LivenessEngine({
     required this.faceDetector,
-    this.cameraValidator = const CameraValidator(),
-    this.frameProcessor = const FrameProcessor(),
+    CameraValidator? cameraValidator,
+    FrameProcessor? frameProcessor,
     this.minConfirmationFrames = 3,
     this.maxSessionDurationMs = 30000,
     this.actionTimeoutMs = 10000,
     this.actionPassThreshold = 0.7,
-  });
+  })  : cameraValidator = cameraValidator ?? CameraValidator(),
+        frameProcessor = frameProcessor ?? FrameProcessor();
 
   bool _initialized = false;
 

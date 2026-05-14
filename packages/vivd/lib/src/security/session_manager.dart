@@ -85,12 +85,21 @@ class SignedPayload {
   /// Verify HMAC signature.
   bool verifySignature(String hmacKey) {
     final payload = _buildPayloadString();
-    final expected = _hmacSha256(payload, hmacKey);
+    final expected = _computeHmacSha256(payload, hmacKey);
     return expected == signature;
   }
 
   String _buildPayloadString() {
     return '$sessionId|$nonce|$timestamp|$score';
+  }
+
+  /// Compute HMAC-SHA256 hex digest.
+  static String _computeHmacSha256(String data, String key) {
+    final keyBytes = utf8.encode(key);
+    final dataBytes = utf8.encode(data);
+    final hmac = Hmac(sha256, keyBytes);
+    final digest = hmac.convert(dataBytes);
+    return digest.toString();
   }
 }
 
@@ -159,7 +168,7 @@ class SessionManager {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final payloadString =
         '${session.sessionId}|${session.nonce}|$timestamp|$score';
-    final signature = _hmacSha256(payloadString, hmacKey);
+    final signature = SignedPayload._computeHmacSha256(payloadString, hmacKey);
 
     return SignedPayload(
       sessionId: session.sessionId,
@@ -185,15 +194,6 @@ class SessionManager {
 
     // Verify HMAC
     return payload.verifySignature(hmacKey);
-  }
-
-  /// Generate HMAC-SHA256 signature.
-  String _hmacSha256(String data, String key) {
-    final keyBytes = utf8.encode(key);
-    final dataBytes = utf8.encode(data);
-    final hmac = Hmac(sha256, keyBytes);
-    final digest = hmac.convert(dataBytes);
-    return digest.toString();
   }
 
   /// Generate random hex string.

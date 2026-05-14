@@ -1,3 +1,5 @@
+import 'liveness_action.dart';
+
 /// Result of a liveness detection session.
 class LivenessResult {
   /// Whether the liveness check passed.
@@ -20,14 +22,15 @@ class LivenessResult {
   /// Timestamp when the session completed (milliseconds since epoch).
   final int completedAt;
 
-  const LivenessResult({
+  LivenessResult({
     required this.isLive,
     required this.score,
     this.sessionId,
-    this.actions = const [],
+    List<ActionDetail>? actions,
     this.antiSpoofScore,
     int? completedAt,
-  }) : completedAt = completedAt ?? DateTime.now().millisecondsSinceEpoch;
+  })  : actions = actions ?? const [],
+        completedAt = completedAt ?? DateTime.now().millisecondsSinceEpoch;
 
   /// Duration of the entire session in milliseconds.
   int? get durationMs {

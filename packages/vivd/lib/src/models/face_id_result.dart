@@ -1,5 +1,3 @@
-import 'liveness_action.dart';
-
 /// Result of face identification.
 class FaceIdResult {
   /// Face ID in format `FID-XXXX`.
@@ -18,7 +16,7 @@ class FaceIdResult {
   /// Timestamp of the identification (milliseconds since epoch).
   final int timestamp;
 
-  const FaceIdResult({
+  FaceIdResult({
     required this.faceId,
     required this.score,
     this.label,
