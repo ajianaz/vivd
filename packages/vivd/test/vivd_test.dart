@@ -150,7 +150,6 @@ void main() {
 
   group('SignedPayload', () {
     test('verifySignature with matching key returns true', () {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
       const payload = SignedPayload(
         sessionId: 'test',
         nonce: 'abcdef1234567890abcdef1234567890',
