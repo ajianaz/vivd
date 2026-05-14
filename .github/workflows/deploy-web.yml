@@ -29,9 +29,10 @@ jobs:
         working-directory: web
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .svelte-kit/cloudflare --project-name=vivd
-          workingDirectory: web
+          projectName: vivd
+          directory: web/.svelte-kit/cloudflare/
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
