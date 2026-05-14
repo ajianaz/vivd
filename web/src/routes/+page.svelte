@@ -10,8 +10,6 @@
 
 	gsap.registerPlugin(ScrollTrigger);
 
-	export const prerender = true;
-
 	let heroRef: HTMLElement;
 	let featuresRef: HTMLElement;
 	let codeRef: HTMLElement;
@@ -77,6 +75,12 @@
 		{ value: '4', label: 'Liveness Actions', icon: Eye },
 		{ value: '20', label: 'Faces Stored', icon: Users }
 	];
+
+	const codeHero = `<span class="text-gray-500">dependencies:</span>\n  <span class="text-indigo-400">vivd</span><span class="text-gray-500">:</span> <span class="text-emerald-400">^0.1.0</span>`;
+
+	const codeQuickstart = `<span class="text-purple-400">import</span> <span class="text-emerald-400">'package:vivd/vivd.dart'</span>;\n<span class="text-gray-500">// Start liveness detection</span>\n<span class="text-purple-400">final</span> result = <span class="text-purple-400">await</span> <span class="text-indigo-400">Vivd</span>.<span class="text-cyan-400">startLiveness</span>(\n  actions: [\n    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">blink</span>,\n    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">smile</span>,\n  ],\n);\n\n<span class="text-purple-400">if</span> (result.<span class="text-cyan-400">isLive</span>) {\n  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Face verified!'</span>);\n  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Score: \${result.score}'</span>);\n}`;
+
+	const codePro = `<span class="text-purple-400">final</span> result = <span class="text-purple-400">await</span> <span class="text-indigo-400">VivdPro</span>.<span class="text-cyan-400">startLiveness</span>(\n  apiKey: <span class="text-emerald-400">'your-api-key'</span>,\n  actions: <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">all</span>,\n  enablePAD: <span class="text-amber-400">true</span>,\n);\n<span class="text-gray-500">// JWT-verified, server-signed result</span>`;
 
 	onMount(() => {
 		const mm = gsap.matchMedia();
@@ -199,7 +203,7 @@
 				<ArrowRight size={16} class="transition-transform group-hover:translate-x-0.5" />
 			</a>
 			<a
-				href="https://github.com/nicepkg/vivd"
+				href="https://github.com/ajianaz/vivd"
 				target="_blank"
 				rel="noopener"
 				class="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-gray-300 hover:text-white font-semibold text-sm transition-all"
@@ -222,8 +226,7 @@
 						</div>
 						<span class="text-[11px] text-gray-500 ml-2">pubspec.yaml</span>
 					</div>
-					<pre class="px-4 py-3 text-[13px] leading-6 overflow-x-auto"><code><span class="text-gray-500">dependencies:</span>
-  <span class="text-indigo-400">vivd</span><span class="text-gray-500">:</span> <span class="text-emerald-400">^0.1.0</span></code></pre>
+						<pre class="px-4 py-3 text-[13px] leading-6 overflow-x-auto"><code>{@html codeHero}</code></pre>
 				</div>
 			</div>
 		</div>
@@ -313,20 +316,7 @@
 							</div>
 							<span class="text-[11px] text-gray-500 ml-2">liveness_check.dart</span>
 						</div>
-						<pre class="px-4 py-4 text-[13px] leading-6 overflow-x-auto"><code><span class="text-purple-400">import</span> <span class="text-emerald-400">'package:vivd/vivd.dart'</span>;
-
-<span class="text-gray-500">// Start liveness detection</span>
-<span class="text-purple-400">final</span> result = <span class="text-purple-400">await</span> <span class="text-indigo-400">Vivd</span>.<span class="text-cyan-400">startLiveness</span>(
-  actions: [
-    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">blink</span>,
-    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">smile</span>,
-  ],
-);
-
-<span class="text-purple-400">if</span> (result.<span class="text-cyan-400">isLive</span>) {
-  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Face verified!'</span>);
-  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Score: </span><span class="text-amber-400">${</span>result.<span class="text-cyan-400">score</span><span class="text-amber-400">}</span><span class="text-emerald-400">'</span>);
-}</code></pre>
+						<pre class="px-4 py-4 text-[13px] leading-6 overflow-x-auto"><code>{@html codeQuickstart}</code></pre>
 					</div>
 				</div>
 			</div>
@@ -452,12 +442,7 @@
 						<div class="flex items-center gap-2 px-4 py-2 border-b border-indigo-500/10">
 							<span class="text-[11px] text-gray-500">pro_example.dart</span>
 						</div>
-						<pre class="px-4 py-3 text-[12px] leading-5 overflow-x-auto"><code><span class="text-purple-400">final</span> result = <span class="text-purple-400">await</span> <span class="text-indigo-400">VivdPro</span>.<span class="text-cyan-400">startLiveness</span>(
-  apiKey: <span class="text-emerald-400">'your-api-key'</span>,
-  actions: <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">all</span>,
-  enablePAD: <span class="text-amber-400">true</span>,
-);
-<span class="text-gray-500">// JWT-verified, server-signed result</span></code></pre>
+						<pre class="px-4 py-3 text-[12px] leading-5 overflow-x-auto"><code>{@html codePro}</code></pre>
 					</div>
 				</div>
 
@@ -495,7 +480,7 @@
 				<ArrowRight size={16} class="transition-transform group-hover:translate-x-0.5" />
 			</a>
 			<a
-				href="https://github.com/nicepkg/vivd"
+				href="https://github.com/ajianaz/vivd"
 				target="_blank"
 				rel="noopener"
 				class="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-gray-300 hover:text-white font-semibold transition-all"

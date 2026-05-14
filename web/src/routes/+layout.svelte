@@ -36,7 +36,7 @@
 
 			<!-- Desktop CTA -->
 			<div class="hidden md:flex items-center gap-3">
-				<a href="https://github.com/nicepkg/vivd" target="_blank" rel="noopener" class="text-gray-400 hover:text-white transition-colors">
+				<a href="https://github.com/ajianaz/vivd" target="_blank" rel="noopener" class="text-gray-400 hover:text-white transition-colors">
 					<Github size={18} />
 				</a>
 				<a href="#quickstart" class="text-sm font-medium px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">
@@ -61,7 +61,7 @@
 					<a href={link.href} class="block text-sm text-gray-400 hover:text-white transition-colors py-1" onclick={() => mobileOpen = false}>{link.label}</a>
 				{/each}
 				<div class="pt-3 border-t border-white/5 flex gap-3">
-					<a href="https://github.com/nicepkg/vivd" target="_blank" rel="noopener" class="text-gray-400 hover:text-white transition-colors">
+					<a href="https://github.com/ajianaz/vivd" target="_blank" rel="noopener" class="text-gray-400 hover:text-white transition-colors">
 						<Github size={18} />
 					</a>
 					<a href="#quickstart" class="text-sm font-medium px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors" onclick={() => mobileOpen = false}>
@@ -106,7 +106,7 @@
 					<h4 class="text-sm font-semibold text-gray-300 mb-3">Resources</h4>
 					<ul class="space-y-2">
 						<li><a href="https://pub.dev/packages/vivd" target="_blank" rel="noopener" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">pub.dev</a></li>
-						<li><a href="https://github.com/nicepkg/vivd" target="_blank" rel="noopener" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">GitHub</a></li>
+						<li><a href="https://github.com/ajianaz/vivd" target="_blank" rel="noopener" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">GitHub</a></li>
 						<li><a href="/CHANGELOG.md" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">Changelog</a></li>
 						<li><a href="/CONTRIBUTING.md" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">Contributing</a></li>
 					</ul>
