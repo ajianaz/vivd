@@ -26,6 +26,7 @@ export 'src/models/face_id_result.dart';
 
 // Camera
 export 'src/camera/camera_service.dart';
+export 'src/camera/camera_service_impl.dart';
 export 'src/camera/camera_validator.dart';
 export 'src/camera/frame_processor.dart';
 
@@ -47,6 +48,9 @@ export 'src/ml/anti_spoof_engine.dart';
 
 // Core
 export 'src/vivd.dart';
+
+// UI
+export 'src/ui/vivd_liveness_detector.dart';
 
 // Re-export image format from camera_service
 export 'src/camera/camera_service.dart' show VivdImageFormat, CameraFrame, ProcessedFrame, CameraError, CameraException;
