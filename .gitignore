@@ -1,0 +1,29 @@
+# Dart/Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+*.metagen
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+pubspec.lock
+
+# Melos
+.melos_tool/
+
+# Coverage
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# ONNX models (large, don't commit)
+*.onnx
