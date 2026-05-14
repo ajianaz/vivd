@@ -1,10 +1,9 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/vivd-v0.0.2-blue?style=flat-square" alt="version" />
+  <img src="https://img.shields.io/badge/vivd-v0.0.1-blue?style=flat-square" alt="version" />
   <img src="https://img.shields.io/badge/flutter-3.29+-02569B?logo=flutter&logoColor=white&style=flat-square" alt="Flutter" />
   <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square" alt="License" />
   <a href="https://github.com/ajianaz/vivd/actions"><img src="https://img.shields.io/github/actions/workflow/status/ajianaz/vivd/ci.yml?branch=develop&style=flat-square" alt="CI" /></a>
-  <a href="https://github.com/ajianaz/vivd/blob/develop/packages/vivd/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square" alt="License" /></a>
 </p>
 
 <h1 align="center">Vivd</h1>
@@ -36,7 +35,7 @@
 ```yaml
 # pubspec.yaml
 dependencies:
-  vivd: ^0.0.2
+  vivd: ^0.0.1
 ```
 
 ### 2. Drop-in widget
@@ -156,7 +155,9 @@ flutter run  # Requires physical device (camera)
 - [x] Core SDK — models, camera, face detection, liveness engine
 - [x] VivdLivenessDetector drop-in widget
 - [x] Basic example app
-- [ ] Advanced example app (full config + face identity demo)
+- [x] Advanced example app (full config + face identity demo)
+- [x] CI/CD — format, analyze, test, publish dry-run
+- [ ] Integration tests (needs device/emulator)
 - [ ] Landing page (vivd.ajianaz.dev)
 - [ ] Publish to pub.dev
 - [ ] Pro SDK — server-backed liveness, ML PAD, compliance

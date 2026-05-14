@@ -3,6 +3,19 @@ description: Open source Flutter face liveness SDK. 100% on-device, offline, no 
 version: 0.0.1
 publish_to: pub.dev
 
+homepage: https://github.com/ajianaz/vivd
+repository: https://github.com/ajianaz/vivd
+issue_tracker: https://github.com/ajianaz/vivd/issues
+documentation: https://github.com/ajianaz/vivd#readme
+
+topics:
+  - face-detection
+  - liveness-detection
+  - flutter
+  - anti-spoofing
+  - biometrics
+  - attendance
+
 environment:
   sdk: "^3.6.0"
   flutter: ">=3.29.0"
