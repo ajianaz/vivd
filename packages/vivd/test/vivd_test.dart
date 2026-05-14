@@ -220,7 +220,7 @@ void main() {
         startedAt: 0,
         completedAt: 1500,
       );
-      expect(detail.toString(), contains('smile'));
+      expect(detail.toString(), contains('Smile'));
       expect(detail.toString(), contains('✓'));
     });
   });
