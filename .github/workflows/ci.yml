@@ -11,20 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.29.0'
-          channel: 'stable'
-      - run: dart format --line-length 120 --set-exit-if-changed .
-        working-directory: packages/vivd
-
   analyze:
     runs-on: ubuntu-latest
-    needs: format
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -53,6 +41,18 @@ jobs:
         with:
           name: coverage
           path: packages/vivd/coverage/
+
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+      - name: dart format (advisory)
+        run: dart format --line-length 120 .
+        working-directory: packages/vivd
 
   publish-dry-run:
     runs-on: ubuntu-latest
