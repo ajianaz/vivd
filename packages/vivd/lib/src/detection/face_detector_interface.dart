@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' hide Point;
 
-import 'package:flutter/foundation.dart';
+import 'camera/camera_service.dart';
 
 /// FaceDetectorInterface — abstraction for pluggable face detection.
 ///
@@ -36,26 +37,11 @@ abstract class FaceDetectorInterface {
     required int width,
     required int height,
     int rotation = 0,
-    InputImageFormat format = InputImageFormat.nv21,
+    VivdImageFormat format = VivdImageFormat.nv21,
   });
 
   /// Release resources. Call when done using the detector.
   Future<void> dispose();
-}
-
-/// Input image format.
-enum InputImageFormat {
-  /// Android default — NV21 (YUV420 semi-planar).
-  nv21,
-
-  /// iOS default — BGRA8888.
-  bgra8888,
-
-  /// YUV420 planar.
-  yuv420,
-
-  /// RGB888.
-  rgb888,
 }
 
 /// Detected face bounding box and landmarks.
@@ -72,7 +58,7 @@ class FaceDetection {
     this.rightEyePosition,
     this.noseBasePosition,
     this.bottomMouthPosition,
-    this.landmarks = const [],
+    this.landmarks = const {},
   });
 
   /// Axis-aligned bounding box of the face.
@@ -103,19 +89,19 @@ class FaceDetection {
   final double? headEulerAngleZ;
 
   /// Position of the left eye center.
-  final Point<double>? leftEyePosition;
+  final Offset? leftEyePosition;
 
   /// Position of the right eye center.
-  final Point<double>? rightEyePosition;
+  final Offset? rightEyePosition;
 
   /// Position of the nose base.
-  final Point<double>? noseBasePosition;
+  final Offset? noseBasePosition;
 
   /// Position of the bottom of the mouth.
-  final Point<double>? bottomMouthPosition;
+  final Offset? bottomMouthPosition;
 
   /// All face landmarks as key-value pairs.
-  final Map<String, Point<double>> landmarks;
+  final Map<String, Offset> landmarks;
 
   /// Average eye open probability (both eyes).
   double? get avgEyeOpen {

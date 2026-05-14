@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' hide Point;
 
 import 'package:flutter/foundation.dart';
 
@@ -9,7 +10,7 @@ class CameraFrame {
     required this.bytes,
     required this.width,
     required this.height,
-    this.format = InputImageFormat.nv21,
+    this.format = VivdImageFormat.nv21,
     this.rotation = 0,
     this.timestamp,
   });
@@ -24,7 +25,7 @@ class CameraFrame {
   final int height;
 
   /// Input format.
-  final InputImageFormat format;
+  final VivdImageFormat format;
 
   /// Clockwise rotation in degrees (0, 90, 180, 270).
   final int rotation;
@@ -43,14 +44,29 @@ class ProcessedFrame {
     required this.width,
     required this.height,
     this.rotation = 0,
-    this.format = InputImageFormat.nv21,
+    this.format = VivdImageFormat.nv21,
   });
 
   final Uint8List bytes;
   final int width;
   final int height;
   final int rotation;
-  final InputImageFormat format;
+  final VivdImageFormat format;
+}
+
+/// Image input format for camera frames.
+enum VivdImageFormat {
+  /// Android default — NV21 (YUV420 semi-planar).
+  nv21,
+
+  /// iOS default — BGRA8888.
+  bgra8888,
+
+  /// YUV420 planar.
+  yuv420,
+
+  /// RGB888.
+  rgb888,
 }
 
 /// Camera service — handles front camera init, frame streaming, and lifecycle.

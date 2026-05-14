@@ -1,4 +1,3 @@
-import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'camera_service.dart';
@@ -21,21 +20,21 @@ class FrameProcessor {
 
   /// Convert camera frame to processable format.
   ///
-  /// For NV21: converts to NV21 (passthrough) or RGB888 if needed.
+  /// For NV21: passes through unchanged.
   /// For BGRA: converts to NV21 for ML Kit compatibility.
   Future<ProcessedFrame> process(CameraFrame frame) async {
-    if (frame.format == InputImageFormat.nv21) {
+    if (frame.format == VivdImageFormat.nv21) {
       // Passthrough — ML Kit accepts NV21 directly
       return ProcessedFrame(
         bytes: frame.bytes,
         width: frame.width,
         height: frame.height,
         rotation: frame.rotation,
-        format: InputImageFormat.nv21,
+        format: VivdImageFormat.nv21,
       );
     }
 
-    if (frame.format == InputImageFormat.bgra8888) {
+    if (frame.format == VivdImageFormat.bgra8888) {
       return _bgraToNv21(frame);
     }
 
@@ -106,7 +105,7 @@ class FrameProcessor {
       width: width,
       height: height,
       rotation: frame.rotation,
-      format: InputImageFormat.nv21,
+      format: VivdImageFormat.nv21,
     );
   }
 
@@ -117,7 +116,7 @@ class FrameProcessor {
     final offsetX = ((frame.width - targetWidth) / 2).round();
     final offsetY = ((frame.height - targetHeight) / 2).round();
 
-    if (frame.format == InputImageFormat.nv21) {
+    if (frame.format == VivdImageFormat.nv21) {
       final yStride = frame.width;
       final cropped = Uint8List(targetWidth * targetHeight * 3 ~/ 2);
 
@@ -151,7 +150,7 @@ class FrameProcessor {
         width: targetWidth,
         height: targetHeight,
         rotation: frame.rotation,
-        format: InputImageFormat.nv21,
+        format: VivdImageFormat.nv21,
       );
     }
 

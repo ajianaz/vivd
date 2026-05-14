@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' hide Point;
 
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart'
+    hide InputImageFormat;
 
 import 'face_detector_interface.dart';
 
@@ -69,7 +71,7 @@ class MlKitFaceDetector implements FaceDetectorInterface {
     required int width,
     required int height,
     int rotation = 0,
-    InputImageFormat format = InputImageFormat.nv21,
+    VivdImageFormat format = VivdImageFormat.nv21,
   }) async {
     if (!_initialized) {
       throw StateError('MlKitFaceDetector not initialized. Call initialize() first.');
@@ -93,13 +95,13 @@ class MlKitFaceDetector implements FaceDetectorInterface {
     required int width,
     required int height,
     required int rotation,
-    required InputImageFormat format,
+    required VivdImageFormat format,
   }) {
     final mlKitFormat = switch (format) {
-      InputImageFormat.nv21 => InputImageFormatValue.nv21,
-      InputImageFormat.bgra8888 => InputImageFormatValue.bgra8888,
-      InputImageFormat.yuv420 => InputImageFormatValue.yuv420,
-      InputImageFormat.rgb888 => InputImageFormatValue.rgb888,
+      VivdImageFormat.nv21 => InputImageFormatValue.nv21,
+      VivdImageFormat.bgra8888 => InputImageFormatValue.bgra8888,
+      VivdImageFormat.yuv420 => InputImageFormatValue.yuv420,
+      VivdImageFormat.rgb888 => InputImageFormatValue.rgb,
     };
 
     final inputRotation = switch (rotation) {
@@ -116,7 +118,7 @@ class MlKitFaceDetector implements FaceDetectorInterface {
         size: Size(width.toDouble(), height.toDouble()),
         rotation: inputRotation,
         format: mlKitFormat,
-        planeData: format == InputImageFormat.nv21
+        planeData: format == VivdImageFormat.nv21
             ? [
                 InputImagePlaneMetadata(
                   bytesPerRow: width,

@@ -47,3 +47,6 @@ export 'src/ml/anti_spoof_engine.dart';
 
 // Core
 export 'src/vivd.dart';
+
+// Re-export image format from camera_service
+export 'src/camera/camera_service.dart' show VivdImageFormat, CameraFrame, ProcessedFrame, CameraError, CameraException;
