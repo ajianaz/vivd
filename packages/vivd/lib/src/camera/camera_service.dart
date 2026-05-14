@@ -96,6 +96,9 @@ abstract class CameraService {
   /// Whether the camera is currently active.
   bool get isRunning;
 
+  /// Start frame streaming after [initialize].
+  Future<void> start();
+
   /// Pause frame streaming without releasing the camera.
   Future<void> pause();
 
