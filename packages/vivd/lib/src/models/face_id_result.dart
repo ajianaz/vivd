@@ -1,3 +1,5 @@
+import 'liveness_action.dart';
+
 /// Result of face identification.
 class FaceIdResult {
   /// Face ID in format `FID-XXXX`.
@@ -9,17 +11,34 @@ class FaceIdResult {
   /// Label provided during registration.
   final String? label;
 
-  /// Embedding vector (for internal use).
-  final List<double>? embedding;
+  /// Whether the face was found in the database (identification mode).
+  /// `false` if this is a registration result.
+  final bool isMatch;
+
+  /// Timestamp of the identification (milliseconds since epoch).
+  final int timestamp;
 
   const FaceIdResult({
     required this.faceId,
     required this.score,
     this.label,
-    this.embedding,
-  });
+    this.isMatch = false,
+    int? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch;
+
+  /// Whether this result meets a minimum confidence threshold.
+  bool meetsThreshold(double threshold) => score >= threshold;
+
+  Map<String, dynamic> toJson() => {
+        'faceId': faceId,
+        'score': score,
+        'label': label,
+        'isMatch': isMatch,
+        'timestamp': timestamp,
+      };
 
   @override
   String toString() =>
-      'FaceIdResult(faceId: $faceId, score: ${score.toStringAsFixed(3)}, label: $label)';
+      'FaceIdResult($faceId, score: ${score.toStringAsFixed(2)}, '
+      'label: $label, match: $isMatch)';
 }
