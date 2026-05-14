@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/widgets.dart';
-
 import 'camera/camera_service.dart';
 import 'camera/camera_validator.dart';
 import 'camera/frame_processor.dart';

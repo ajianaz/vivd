@@ -154,7 +154,6 @@ class LivenessEngine {
     var confirmedFrames = 0;
     var totalFrames = 0;
     var bestScore = 0.0;
-    FaceDetection? lastFace;
 
     final completer = Completer<ActionDetail>();
 
@@ -199,7 +198,6 @@ class LivenessEngine {
         totalFrames++;
 
         final face = faces.first;
-        lastFace = face;
         onProgress?.call(action, face);
 
         // Check if action is detected

@@ -90,7 +90,6 @@ class AntiSpoofEngine {
   ) {
     if (width < 3 || height < 3) return 0.0;
 
-    final yLength = width * height;
     var sum = 0.0;
     var sumSq = 0.0;
     var count = 0;

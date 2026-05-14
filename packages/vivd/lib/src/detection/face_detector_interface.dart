@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:ui' hide Point;
+import 'dart:ui';
 
 import '../camera/camera_service.dart';
 
