@@ -57,11 +57,11 @@ class CameraServiceImpl extends CameraService {
       await _controller!.initialize();
     } on cam.CameraException catch (e) {
       if (e.code == 'CameraAccessDenied') {
-        throw CameraException(CameraError.permissionDenied, e.message);
+        throw CameraException(CameraError.permissionDenied, e.description ?? '');
       }
       throw CameraException(
         CameraError.unknown,
-        'Failed to initialize camera: ${e.message}',
+        'Failed to initialize camera: ${e.description ?? e.code}',
       );
     }
 

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivd/vivd.dart';
@@ -179,7 +180,6 @@ void main() {
     });
 
     test('durationMs calculates correctly', () {
-      final now = DateTime.now().millisecondsSinceEpoch;
       final result = LivenessResult(
         isLive: true,
         score: 0.9,

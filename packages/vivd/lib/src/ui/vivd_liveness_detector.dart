@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../camera/camera_service.dart';
 import '../camera/camera_service_impl.dart';
 import '../models/liveness_action.dart';
 import '../models/liveness_result.dart';
