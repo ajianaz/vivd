@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:ui' hide Point;
+import 'dart:ui';
 
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
@@ -99,17 +99,15 @@ class MlKitFaceDetector implements FaceDetectorInterface {
       VivdImageFormat.nv21 => InputImageFormat.nv21,
       VivdImageFormat.bgra8888 => InputImageFormat.bgra8888,
       VivdImageFormat.yuv420 => InputImageFormat.yuv420,
-      VivdImageFormat.rgb888 => InputImageFormat.yuv420888,
+      VivdImageFormat.rgb888 => InputImageFormat.nv21, // ML Kit handles conversion
     };
   }
 
   FaceDetection _convertFace(Face face) {
     Offset? _toOffset(dynamic point) {
       if (point == null) return null;
-      if (point is Point<int>) {
-        return Offset(point.x.toDouble(), point.y.toDouble());
-      }
       if (point is Offset) return point;
+      if (point is Point) return Offset(point.x.toDouble(), point.y.toDouble());
       return null;
     }
 
