@@ -2,21 +2,13 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' hide Point;
 
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart'
-    hide InputImageFormat;
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 import 'face_detector_interface.dart';
 
 /// ML Kit face detector — default implementation using Google ML Kit.
 ///
 /// On-device, no network required. Supports Android and iOS.
-///
-/// ```dart
-/// final detector = MlKitFaceDetector();
-/// await detector.initialize();
-/// final faces = await detector.detect(bytes, width: 640, height: 480);
-/// await detector.dispose();
-/// ```
 class MlKitFaceDetector implements FaceDetectorInterface {
   FaceDetector? _detector;
   bool _initialized = false;
@@ -74,64 +66,46 @@ class MlKitFaceDetector implements FaceDetectorInterface {
     VivdImageFormat format = VivdImageFormat.nv21,
   }) async {
     if (!_initialized) {
-      throw StateError('MlKitFaceDetector not initialized. Call initialize() first.');
+      throw StateError(
+          'MlKitFaceDetector not initialized. Call initialize() first.');
     }
 
-    final inputImage = _buildInputImage(
-      bytes: bytes,
-      width: width,
-      height: height,
-      rotation: rotation,
-      format: format,
-    );
-
-    final faces = await _detector!.processImage(inputImage);
-
-    return faces.map(_convertFace).toList();
-  }
-
-  InputImage _buildInputImage({
-    required Uint8List bytes,
-    required int width,
-    required int height,
-    required int rotation,
-    required VivdImageFormat format,
-  }) {
-    final mlKitFormat = switch (format) {
-      VivdImageFormat.nv21 => InputImageFormatValue.nv21,
-      VivdImageFormat.bgra8888 => InputImageFormatValue.bgra8888,
-      VivdImageFormat.yuv420 => InputImageFormatValue.yuv420,
-      VivdImageFormat.rgb888 => InputImageFormatValue.rgb,
-    };
-
-    final inputRotation = switch (rotation) {
-      90 => InputImageRotation.rotation0deg,
-      180 => InputImageRotation.rotation90deg,
-      270 => InputImageRotation.rotation180deg,
-      0 => InputImageRotation.rotation0deg,
-      _ => InputImageRotation.rotation0deg,
-    };
-
-    return InputImage.fromBytes(
+    final inputImage = InputImage.fromBytes(
       bytes: bytes,
       metadata: InputImageMetadata(
         size: Size(width.toDouble(), height.toDouble()),
-        rotation: inputRotation,
-        format: mlKitFormat,
-        planeData: format == VivdImageFormat.nv21
-            ? [
-                InputImagePlaneMetadata(
-                  bytesPerRow: width,
-                  height: height * 3 ~/ 2,
-                  width: width,
-                ),
-              ]
-            : null,
+        rotation: _toInputImageRotation(rotation),
+        format: _toInputImageFormat(format),
+        bytesPerRow: width,
       ),
     );
+
+    final faces = await _detector!.processImage(inputImage);
+    return faces.map(_convertFace).toList();
+  }
+
+  InputImageRotation _toInputImageRotation(int degrees) {
+    return switch (degrees) {
+      90 => InputImageRotation.rotation90deg,
+      180 => InputImageRotation.rotation180deg,
+      270 => InputImageRotation.rotation270deg,
+      _ => InputImageRotation.rotation0deg,
+    };
+  }
+
+  InputImageFormat _toInputImageFormat(VivdImageFormat format) {
+    return switch (format) {
+      VivdImageFormat.nv21 => InputImageFormat.nv21,
+      VivdImageFormat.bgra8888 => InputImageFormat.bgra8888,
+      VivdImageFormat.yuv420 => InputImageFormat.yuv420,
+      VivdImageFormat.rgb888 => InputImageFormat.srgb,
+    };
   }
 
   FaceDetection _convertFace(Face face) {
+    Offset? _toOffset(Point<int>? point) =>
+        point != null ? Offset(point.x.toDouble(), point.y.toDouble()) : null;
+
     return FaceDetection(
       boundingBox: face.boundingBox,
       leftEyeOpen: face.leftEyeOpenProbability,
@@ -140,11 +114,14 @@ class MlKitFaceDetector implements FaceDetectorInterface {
       headEulerAngleX: face.headEulerAngleX,
       headEulerAngleY: face.headEulerAngleY,
       headEulerAngleZ: face.headEulerAngleZ,
-      leftEyePosition: face.landmarks[FaceLandmarkType.leftEye]?.position,
-      rightEyePosition: face.landmarks[FaceLandmarkType.rightEye]?.position,
-      noseBasePosition: face.landmarks[FaceLandmarkType.noseBase]?.position,
+      leftEyePosition:
+          _toOffset(face.landmarks[FaceLandmarkType.leftEye]?.position),
+      rightEyePosition:
+          _toOffset(face.landmarks[FaceLandmarkType.rightEye]?.position),
+      noseBasePosition:
+          _toOffset(face.landmarks[FaceLandmarkType.noseBase]?.position),
       bottomMouthPosition:
-          face.landmarks[FaceLandmarkType.bottomMouth]?.position,
+          _toOffset(face.landmarks[FaceLandmarkType.bottomMouth]?.position),
     );
   }
 

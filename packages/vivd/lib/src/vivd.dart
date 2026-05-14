@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import 'src/camera/camera_service.dart';
-import 'src/camera/camera_validator.dart';
-import 'src/camera/frame_processor.dart';
-import 'src/detection/face_detector_interface.dart';
-import 'src/detection/ml_kit_face_detector.dart';
-import 'src/identity/face_identity.dart';
-import 'src/liveness/liveness_engine.dart';
-import 'src/ml/anti_spoof_engine.dart';
-import 'src/models/face_id_result.dart';
-import 'src/models/liveness_action.dart';
-import 'src/models/liveness_result.dart';
-import 'src/security/session_manager.dart';
+import 'camera/camera_service.dart';
+import 'camera/camera_validator.dart';
+import 'camera/frame_processor.dart';
+import 'detection/face_detector_interface.dart';
+import 'detection/ml_kit_face_detector.dart';
+import 'identity/face_identity.dart';
+import 'liveness/liveness_engine.dart';
+import 'ml/anti_spoof_engine.dart';
+import 'models/face_id_result.dart';
+import 'models/liveness_action.dart';
+import 'models/liveness_result.dart';
+import 'security/session_manager.dart';
 
 /// Configuration for Vivd SDK.
 class VivdConfig {

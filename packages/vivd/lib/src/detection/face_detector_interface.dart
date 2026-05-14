@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' hide Point;
 
-import 'camera/camera_service.dart';
+import '../camera/camera_service.dart';
 
 /// FaceDetectorInterface — abstraction for pluggable face detection.
 ///
