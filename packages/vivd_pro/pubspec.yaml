@@ -1,6 +1,6 @@
 name: vivd_pro
 description: Vivd Pro — Server-backed face liveness with ML PAD, compliance, and face management.
-version: 0.1.0
+version: 0.0.1
 publish_to: pub.dev
 
 environment:
