@@ -52,4 +52,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           preCommands: npx wrangler pages project create vivd --production-branch=main || true
-          command: pages deploy web/.svelte-kit/cloudflare/ --project-name=vivd --commit-dirty=true
+          command: pages deploy web/.svelte-kit/cloudflare/ --project-name=vivd --commit-dirty=true --branch=main
