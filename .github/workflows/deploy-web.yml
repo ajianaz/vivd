@@ -5,6 +5,10 @@ on:
     tags:
       - 'web-v*'
 
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -12,6 +16,13 @@ jobs:
       contents: read
       deployments: write
     steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] || [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "::error::Missing required secrets. Please configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in repository settings."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -27,6 +38,13 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: web
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "web/.svelte-kit/cloudflare" ] || [ -z "$(ls -A web/.svelte-kit/cloudflare)" ]; then
+            echo "::error::Build output is empty or missing. Check build logs above."
+            exit 1
+          fi
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
