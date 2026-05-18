@@ -229,7 +229,6 @@ class CameraServiceImpl extends CameraService {
       final height = image.height;
       final yPlane = planes[0];
       final yRowStride = yPlane.bytesPerRow;
-      final yPixelStride = yPlane.bytesPerRow ~/ width;
 
       final totalSize = width * height * 3 ~/ 2;
       final bytes = Uint8List(totalSize);
