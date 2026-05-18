@@ -11,32 +11,12 @@ import '../vivd.dart';
 ///
 /// Handles camera initialization, liveness session, and result callback.
 /// All processing happens on-device.
-///
-/// ```dart
-/// VivdLivenessDetector(
-///   onResult: (result) {
-///     print('Live: ${result.isLive}');
-///   },
-/// )
-/// ```
 class VivdLivenessDetector extends StatefulWidget {
-  /// Vivd configuration. Uses defaults if not provided.
   final VivdConfig? config;
-
-  /// Called when the liveness session completes.
   final void Function(LivenessResult result)? onResult;
-
-  /// Called when a new action starts during the session.
   final void Function(VivdAction action, int index, int total)? onProgress;
-
-  /// Widget shown while camera initializes.
   final Widget? loadingWidget;
-
-  /// Builder for error state. Receives the error message.
   final Widget Function(BuildContext context, String error)? errorBuilder;
-
-  /// Custom overlay builder for action prompts.
-  /// If null, uses default [ActionPromptOverlay].
   final Widget Function(
     BuildContext context,
     VivdAction? currentAction,
@@ -44,14 +24,8 @@ class VivdLivenessDetector extends StatefulWidget {
     int totalActions,
     bool isRunning,
   )? overlayBuilder;
-
-  /// Custom camera preview builder.
-  /// If null, uses [CameraServiceImpl.buildPreview].
   final Widget Function(BuildContext context, CameraServiceImpl camera)?
       cameraPreviewBuilder;
-
-  /// Whether to start liveness automatically after init.
-  /// Default: `true`.
   final bool autoStart;
 
   const VivdLivenessDetector({
@@ -70,8 +44,9 @@ class VivdLivenessDetector extends StatefulWidget {
   State<VivdLivenessDetector> createState() => _VivdLivenessDetectorState();
 }
 
-class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
-  late Vivd _vivd;
+class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
+    with TickerProviderStateMixin {
+  Vivd? _vivd;
   CameraServiceImpl? _camera;
   bool _initialized = false;
   bool _running = false;
@@ -82,21 +57,41 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
   int _totalActions = 0;
   LivenessResult? _result;
 
+  // Track completed action steps for step indicator
+  List<bool> _actionCompleted = [];
+  List<bool?> _actionResults = []; // null=pending, true=passed, false=failed
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
     _init();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _vivd?.dispose();
+    _camera?.dispose();
+    super.dispose();
   }
 
   Future<void> _init() async {
     try {
-      // Initialize camera
       _camera = CameraServiceImpl();
       await _camera!.initialize();
 
-      // Initialize Vivd SDK
       _vivd = Vivd(config: widget.config);
-      await _vivd.initialize();
+      await _vivd!.initialize();
 
       if (mounted) {
         setState(() => _initialized = true);
@@ -105,24 +100,45 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
         }
       }
     } catch (e) {
+      _log('[Vivd] Init error: $e');
       if (mounted) {
         setState(() => _error = e.toString());
       }
     }
   }
 
+  /// Stop camera stream and release camera resources.
+  /// Call after session completes or when restarting.
+  Future<void> _releaseCamera() async {
+    if (_camera == null) return;
+    try {
+      await _camera!.stop();
+    } catch (_) {}
+    // Don't dispose controller — just stop streaming.
+    // Camera preview still shows last frame.
+  }
+
   Future<void> _startLiveness() async {
     if (!_initialized || _running || _completed) return;
-    setState(() => _running = true);
+
+    final actionCount = widget.config?.actions.length ?? 2;
+    setState(() {
+      _running = true;
+      _actionCompleted = List.generate(actionCount, (_) => false);
+      _actionResults = List.generate(actionCount, (_) => null);
+    });
 
     try {
       await _camera!.start();
 
-      final result = await _vivd.startLiveness(
+      final result = await _vivd!.startLiveness(
         frameStream: _camera!.frameStream,
         actions: widget.config?.actions,
         onProgress: (action, index, total) {
           if (mounted) {
+            if (index > 0 && index <= _actionCompleted.length) {
+              _actionCompleted[index - 1] = true;
+            }
             setState(() {
               _currentAction = action;
               _actionIndex = index;
@@ -133,16 +149,27 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
         },
       );
 
+      // Session done — stop camera immediately
+      await _releaseCamera();
+
       if (mounted) {
         setState(() {
           _running = false;
           _completed = true;
           _result = result;
           _currentAction = null;
+          for (var i = 0; i < result.actions.length; i++) {
+            if (i < _actionCompleted.length) {
+              _actionCompleted[i] = true;
+              _actionResults[i] = result.actions[i].passed;
+            }
+          }
         });
         widget.onResult?.call(result);
+        _log('[Vivd] Session complete — camera stopped');
       }
     } catch (e) {
+      await _releaseCamera();
       if (mounted) {
         setState(() {
           _running = false;
@@ -152,29 +179,66 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
     }
   }
 
-  /// Restart the liveness session (e.g., after failure).
+  bool _restarting = false;
+
   void restart() {
-    setState(() {
-      _completed = false;
-      _result = null;
-      _error = null;
-      _currentAction = null;
-      _actionIndex = 0;
-      _totalActions = 0;
+    if (_restarting) return;
+    _restarting = true;
+    _log('[Vivd] Restart tapped');
+
+    // Schedule restart AFTER current frame completes.
+    // Using scheduleMicrotask ensures setState doesn't block async execution.
+    scheduleMicrotask(() {
+      if (!mounted) return;
+      setState(() {
+        _running = false;
+        _completed = false;
+        _result = null;
+        _error = null;
+        _currentAction = null;
+        _actionIndex = 0;
+        _totalActions = 0;
+        _actionCompleted.clear();
+        _actionResults.clear();
+      });
+      _doRestart();
     });
-    _startLiveness();
   }
 
-  @override
-  void dispose() {
-    _vivd.dispose();
-    _camera?.dispose();
-    super.dispose();
+  Future<void> _doRestart() async {
+    _log('[Vivd] Restart: start');
+
+    // Skip dispose — ML Kit close() hangs. Just replace.
+    // Attempt safe dispose of old instance with timeout
+    final oldVivd = _vivd;
+    if (oldVivd != null) {
+      oldVivd.dispose().timeout(const Duration(seconds: 1)).catchError((_) {});
+    }
+
+    _vivd = Vivd(config: widget.config);
+    _log('[Vivd] Restart: new Vivd created');
+
+    try {
+      await _vivd!.initialize();
+      _log('[Vivd] Restart: initialized');
+    } catch (e) {
+      _log('[Vivd] Restart: init error: $e');
+      if (mounted) {
+        setState(() {
+          _restarting = false;
+          _error = e.toString();
+        });
+      }
+      return;
+    }
+
+    _restarting = false;
+    _log('[Vivd] Restart: starting session');
+    if (mounted) _startLiveness();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Error state
     if (_error != null) {
       return widget.errorBuilder?.call(context, _error!) ??
           _DefaultErrorWidget(
@@ -183,25 +247,40 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
           );
     }
 
-    // Loading state
     if (!_initialized) {
       return widget.loadingWidget ??
-          const Center(child: CircularProgressIndicator());
+          _buildLoadingScreen();
     }
 
-    // Completed state with result
     if (_completed && _result != null) {
       return _buildResultView();
     }
 
-    // Active session or ready to start
     return Stack(
       fit: StackFit.expand,
       children: [
         // Camera preview
         _buildCameraPreview(),
 
-        // Action overlay
+        // Dark vignette around face area
+        _buildVignette(),
+
+        // Face oval guide
+        if (_running)
+          Center(
+            child: _buildFaceOval(),
+          ),
+
+        // Step indicator (top)
+        if (_running || _completed)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildStepIndicator(),
+          ),
+
+        // Action overlay (bottom)
         if (widget.overlayBuilder != null)
           widget.overlayBuilder!(
             context,
@@ -210,14 +289,50 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
             _totalActions,
             _running,
           )
-        else
-          ActionPromptOverlay(
-            currentAction: _currentAction,
-            actionIndex: _actionIndex,
-            totalActions: _totalActions,
-            isRunning: _running,
+        else if (_running)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildActionOverlay(),
+          )
+        else if (!_completed)
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 80,
+            child: _WaitingPrompt(),
           ),
       ],
+    );
+  }
+
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Initializing Camera...',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -231,138 +346,368 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector> {
     return const SizedBox.shrink();
   }
 
+  Widget _buildVignette() {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            colors: [
+              Colors.transparent,
+              Colors.black.withValues(alpha: 0.3),
+              Colors.black.withValues(alpha: 0.7),
+            ],
+            stops: const [0.4, 0.7, 1.0],
+            radius: 0.8,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFaceOval() {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        final scale = _currentAction != null ? _pulseAnimation.value : 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: CustomPaint(
+            size: const Size(240, 320),
+            painter: _OvalPainter(
+              color: _currentAction != null
+                  ? Colors.white.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.3),
+              strokeWidth: 2,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            for (var i = 0; i < _totalActions; i++)
+              Expanded(
+                child: _buildStepPill(i),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepPill(int index) {
+    final isCurrent = index == _actionIndex && _running;
+    final isCompleted = index < _actionCompleted.length && _actionCompleted[index];
+    final passed = index < _actionResults.length ? _actionResults[index] : null;
+
+    Color color;
+    if (isCompleted && passed == true) {
+      color = Colors.green;
+    } else if (isCompleted && passed == false) {
+      color = Colors.redAccent;
+    } else if (isCurrent) {
+      color = Colors.white;
+    } else {
+      color = Colors.white24;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: 4,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionOverlay() {
+    if (_currentAction == null) return const SizedBox.shrink();
+
+    final action = _currentAction!;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.8),
+          ],
+          stops: const [0.0, 0.3],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Step label
+              Text(
+                'Step ${_actionIndex + 1} of $_totalActions',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Action emoji
+              Text(
+                action.emoji,
+                style: const TextStyle(fontSize: 48),
+              ),
+              const SizedBox(height: 12),
+
+              // Action label
+              Text(
+                action.label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Instruction
+              Text(
+                action.instruction,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Timeout progress bar
+              _buildTimeoutBar(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeoutBar() {
+    // Simple animated indicator showing time remaining
+    return Container(
+      height: 3,
+      decoration: BoxDecoration(
+        color: Colors.white12,
+        borderRadius: BorderRadius.circular(1.5),
+      ),
+    );
+  }
+
   Widget _buildResultView() {
     final result = _result!;
     final isLive = result.isLive;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isLive ? Icons.verified : Icons.cancel,
-              size: 80,
-              color: isLive ? Colors.green : Colors.red,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              isLive ? 'Verified!' : 'Verification Failed',
-              style: TextStyle(
-                color: isLive ? Colors.green : Colors.red,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Score: ${(result.score * 100).toStringAsFixed(1)}%',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
-            ),
-            if (result.passedActions > 0)
-              Text(
-                '${result.passedActions}/${result.totalActions} actions passed',
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 14,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Result icon with scale animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.elasticOut,
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isLive
+                              ? Colors.green.withValues(alpha: 0.15)
+                              : Colors.red.withValues(alpha: 0.15),
+                        ),
+                        child: Icon(
+                          isLive ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                          size: 64,
+                          color: isLive ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: restart,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
+                const SizedBox(height: 24),
+
+                // Result text
+                Text(
+                  isLive ? 'Verified!' : 'Verification Failed',
+                  style: TextStyle(
+                    color: isLive ? Colors.green : Colors.red,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Score
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Score: ${(result.score * 100).toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Action breakdown
+                if (result.actions.isNotEmpty) ...[
+                  const Text(
+                    'Actions',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: result.actions.map((a) {
+                      final passed = a.passed;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: passed
+                              ? Colors.green.withValues(alpha: 0.12)
+                              : Colors.red.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: passed
+                                ? Colors.green.withValues(alpha: 0.3)
+                                : Colors.red.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              passed ? Icons.check_circle : Icons.cancel,
+                              size: 16,
+                              color: passed ? Colors.green : Colors.red,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${a.action.emoji} ${a.action.label}',
+                              style: TextStyle(
+                                color: passed ? Colors.greenAccent : Colors.redAccent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+
+                const SizedBox(height: 40),
+
+                // Retry button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: restart,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Try Again'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white10,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Default action prompt overlay.
-class ActionPromptOverlay extends StatelessWidget {
-  final VivdAction? currentAction;
-  final int actionIndex;
-  final int totalActions;
-  final bool isRunning;
-
-  const ActionPromptOverlay({
-    super.key,
-    this.currentAction,
-    required this.actionIndex,
-    required this.totalActions,
-    required this.isRunning,
-  });
+/// Waiting prompt shown before session starts.
+class _WaitingPrompt extends StatelessWidget {
+  const _WaitingPrompt();
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 48,
-      child: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 32),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: isRunning && currentAction != null
-              ? _buildActionPrompt(context)
-              : _buildWaitingPrompt(context),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionPrompt(BuildContext context) {
-    final icon = switch (currentAction!) {
-      VivdAction.blink => Icons.remove_red_eye,
-      VivdAction.smile => Icons.sentiment_satisfied,
-      VivdAction.headTurnLeft => Icons.arrow_back,
-      VivdAction.headTurnRight => Icons.arrow_forward,
-      VivdAction.lookUp => Icons.arrow_upward,
-      VivdAction.lookDown => Icons.arrow_downward,
-    };
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(width: 12),
-            Text(
-              currentAction!.label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.face, color: Colors.white70, size: 20),
+                  SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      'Position your face in the frame',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Step ${actionIndex + 1} of $totalActions',
-          style: const TextStyle(color: Colors.white54, fontSize: 13),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWaitingPrompt(BuildContext context) {
-    return const Text(
-      'Position your face in the frame',
-      style: TextStyle(color: Colors.white70, fontSize: 16),
-      textAlign: TextAlign.center,
+      ),
     );
   }
 }
@@ -389,9 +734,9 @@ class _DefaultErrorWidget extends StatelessWidget {
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 48),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Camera Error',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -417,4 +762,38 @@ class _DefaultErrorWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OvalPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+
+  _OvalPainter({required this.color, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height / 2),
+        width: size.width,
+        height: size.height,
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _OvalPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
+  }
+}
+
+void _log(String message) {
+  // ignore: avoid_print
+  print(message);
 }

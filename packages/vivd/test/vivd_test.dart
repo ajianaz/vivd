@@ -107,9 +107,9 @@ void main() {
       const config = VivdConfig();
       expect(config.actions, [VivdAction.blink, VivdAction.smile]);
       expect(config.minConfirmationFrames, 3);
-      expect(config.maxSessionDurationMs, 30000);
-      expect(config.actionTimeoutMs, 10000);
-      expect(config.actionPassThreshold, 0.7);
+      expect(config.maxSessionDurationMs, 60000);
+      expect(config.actionTimeoutMs, 15000);
+      expect(config.actionPassThreshold, 0.6);
       expect(config.enableAntiSpoof, false);
       expect(config.hmacKey, '');
     });

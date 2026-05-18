@@ -1,7 +1,7 @@
 name: vivd
 description: Open source Flutter face liveness SDK. 100% on-device, offline, no API key needed.
 version: 0.0.1
-publish_to: pub.dev
+publish_to: https://pub.dev
 
 homepage: https://github.com/ajianaz/vivd
 repository: https://github.com/ajianaz/vivd
