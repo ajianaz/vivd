@@ -191,7 +191,7 @@ class LivenessEngine {
           if (totalFrames <= 5 || detected) {
             _log('[Vivd] ${action.label}: detected=$detected score=${score.toStringAsFixed(2)} '
                 'eyes=${face.avgEyeOpen?.toStringAsFixed(2)} smile=${face.smiling?.toStringAsFixed(2)} '
-                'headY=${face.headEulerAngleY?.toStringAsFixed(1)}');
+                'headY=${face.headEulerAngleY?.toStringAsFixed(1)} headX=${face.headEulerAngleX?.toStringAsFixed(1)}');
           }
 
           if (detected) {
@@ -262,10 +262,13 @@ class LivenessEngine {
     return switch (action) {
       VivdAction.blink => face.areEyesClosed(threshold: 0.3),
       VivdAction.smile => face.isSmiling(threshold: 0.6),
-      VivdAction.headTurnLeft => face.isHeadTurnedLeft(threshold: -18.0),
-      VivdAction.headTurnRight => face.isHeadTurnedRight(threshold: 18.0),
-      VivdAction.lookUp => face.isLookingUp(threshold: -12.0),
-      VivdAction.lookDown => face.isLookingDown(threshold: 12.0),
+      // Front camera mirrors horizontally, so swap left/right logic:
+      // User turns left → camera sees right → ML Kit reports positive Y
+      VivdAction.headTurnLeft => face.isHeadTurnedRight(threshold: 18.0),
+      VivdAction.headTurnRight => face.isHeadTurnedLeft(threshold: -18.0),
+      // Front camera mirrors: swap up/down like left/right
+      VivdAction.lookUp => face.isLookingDown(threshold: 14.0),
+      VivdAction.lookDown => face.isLookingUp(threshold: -4.0),
     };
   }
 
@@ -273,14 +276,16 @@ class LivenessEngine {
     return switch (action) {
       VivdAction.blink => (1.0 - (face.avgEyeOpen ?? 1.0)).clamp(0.0, 1.0),
       VivdAction.smile => (face.smiling ?? 0.0).clamp(0.0, 1.0),
+      // Front camera mirrors: swap score directions
       VivdAction.headTurnLeft =>
-        (-(face.headEulerAngleY ?? 0.0) / 45.0).clamp(0.0, 1.0),
-      VivdAction.headTurnRight =>
         ((face.headEulerAngleY ?? 0.0) / 45.0).clamp(0.0, 1.0),
+      VivdAction.headTurnRight =>
+        (-(face.headEulerAngleY ?? 0.0) / 45.0).clamp(0.0, 1.0),
+      // Front camera mirrors: swap score directions
       VivdAction.lookUp =>
-        (-(face.headEulerAngleX ?? 0.0) / 30.0).clamp(0.0, 1.0),
-      VivdAction.lookDown =>
         ((face.headEulerAngleX ?? 0.0) / 30.0).clamp(0.0, 1.0),
+      VivdAction.lookDown =>
+        (-(face.headEulerAngleX ?? 0.0) / 30.0).clamp(0.0, 1.0),
     };
   }
 

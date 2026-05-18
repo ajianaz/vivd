@@ -39,6 +39,16 @@ class LivenessScreen extends StatelessWidget {
       ),
       backgroundColor: Colors.black,
       body: VivdLivenessDetector(
+        config: const VivdConfig(
+          actions: [
+            VivdAction.blink,
+            VivdAction.headTurnLeft,
+            VivdAction.headTurnRight,
+            VivdAction.lookUp,
+            VivdAction.lookDown,
+            VivdAction.smile,
+          ],
+        ),
         onResult: (result) {
           // The widget shows the result view automatically.
           // You can also handle the result programmatically here.
