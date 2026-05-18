@@ -19,9 +19,9 @@ class VivdConfig {
   const VivdConfig({
     this.actions = const [VivdAction.blink, VivdAction.smile],
     this.minConfirmationFrames = 3,
-    this.maxSessionDurationMs = 30000,
-    this.actionTimeoutMs = 10000,
-    this.actionPassThreshold = 0.7,
+    this.maxSessionDurationMs = 60000,
+    this.actionTimeoutMs = 15000,
+    this.actionPassThreshold = 0.6,
     this.enableAntiSpoof = false,
     this.hmacKey = '',
     this.sessionDurationSeconds = 300,

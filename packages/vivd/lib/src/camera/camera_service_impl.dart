@@ -130,9 +130,16 @@ class CameraServiceImpl extends CameraService {
   @override
   Future<void> dispose() async {
     _disposed = true;
-    await stop();
+    _isRunning = false;
+    // Close stream controller first to unblock any listeners.
     await _frameController?.close();
-    await _controller?.dispose();
+    // Stop image stream with timeout to prevent hanging.
+    try {
+      await _controller?.stopImageStream().timeout(const Duration(seconds: 2));
+    } catch (_) {}
+    try {
+      await _controller?.dispose();
+    } catch (_) {}
     _controller = null;
     _frameController = null;
   }
