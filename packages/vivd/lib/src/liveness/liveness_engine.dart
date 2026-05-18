@@ -20,6 +20,13 @@ class LivenessEngine {
   final int maxSessionDurationMs;
   final int actionTimeoutMs;
   final double actionPassThreshold;
+  final int sensorOrientation;
+
+  /// When sensorOrientation is 270 (common for front camera in portrait),
+  /// the frame is rotated 270° before ML Kit analysis, which flips both
+  /// X and Y euler angle signs vs the ML Kit documentation convention.
+  /// This flag enables automatic correction.
+  bool get _mirrorEulerAngles => sensorOrientation == 270;
 
   LivenessEngine({
     required this.faceDetector,
@@ -29,6 +36,7 @@ class LivenessEngine {
     this.maxSessionDurationMs = 60000,
     this.actionTimeoutMs = 15000,
     this.actionPassThreshold = 0.7,
+    this.sensorOrientation = 0,
   })  : cameraValidator = cameraValidator ?? CameraValidator(),
         frameProcessor = frameProcessor ?? FrameProcessor();
 
@@ -259,16 +267,25 @@ class LivenessEngine {
   }
 
   bool _detectAction(VivdAction action, FaceDetection face) {
+    // When frame is rotated 270° (front camera portrait), euler angle signs
+    // are inverted vs ML Kit documentation convention. _mirrorEulerAngles
+    // corrects this automatically.
+    final m = _mirrorEulerAngles;
     return switch (action) {
       VivdAction.blink => face.areEyesClosed(threshold: 0.3),
       VivdAction.smile => face.isSmiling(threshold: 0.6),
-      // Front camera mirrors horizontally, so swap left/right logic:
-      // User turns left → camera sees right → ML Kit reports positive Y
-      VivdAction.headTurnLeft => face.isHeadTurnedRight(threshold: 18.0),
-      VivdAction.headTurnRight => face.isHeadTurnedLeft(threshold: -18.0),
-      // Front camera mirrors: swap up/down like left/right
-      VivdAction.lookUp => face.isLookingDown(threshold: 14.0),
-      VivdAction.lookDown => face.isLookingUp(threshold: -4.0),
+      VivdAction.headTurnLeft => m
+          ? face.isHeadTurnedRight(threshold: 18.0)
+          : face.isHeadTurnedLeft(threshold: -18.0),
+      VivdAction.headTurnRight => m
+          ? face.isHeadTurnedLeft(threshold: -18.0)
+          : face.isHeadTurnedRight(threshold: 18.0),
+      VivdAction.lookUp => m
+          ? face.isLookingDown(threshold: 14.0)
+          : face.isLookingUp(threshold: -14.0),
+      VivdAction.lookDown => m
+          ? face.isLookingUp(threshold: -14.0)
+          : face.isLookingDown(threshold: 14.0),
     };
   }
 
@@ -276,16 +293,26 @@ class LivenessEngine {
     return switch (action) {
       VivdAction.blink => (1.0 - (face.avgEyeOpen ?? 1.0)).clamp(0.0, 1.0),
       VivdAction.smile => (face.smiling ?? 0.0).clamp(0.0, 1.0),
-      // Front camera mirrors: swap score directions
       VivdAction.headTurnLeft =>
-        ((face.headEulerAngleY ?? 0.0) / 45.0).clamp(0.0, 1.0),
+        (_mirrorEulerAngles
+                ? ((face.headEulerAngleY ?? 0.0) / 45.0)
+                : (-(face.headEulerAngleY ?? 0.0) / 45.0))
+            .clamp(0.0, 1.0),
       VivdAction.headTurnRight =>
-        (-(face.headEulerAngleY ?? 0.0) / 45.0).clamp(0.0, 1.0),
-      // Front camera mirrors: swap score directions
+        (_mirrorEulerAngles
+                ? (-(face.headEulerAngleY ?? 0.0) / 45.0)
+                : ((face.headEulerAngleY ?? 0.0) / 45.0))
+            .clamp(0.0, 1.0),
       VivdAction.lookUp =>
-        ((face.headEulerAngleX ?? 0.0) / 30.0).clamp(0.0, 1.0),
+        (_mirrorEulerAngles
+                ? ((face.headEulerAngleX ?? 0.0) / 30.0)
+                : (-(face.headEulerAngleX ?? 0.0) / 30.0))
+            .clamp(0.0, 1.0),
       VivdAction.lookDown =>
-        (-(face.headEulerAngleX ?? 0.0) / 30.0).clamp(0.0, 1.0),
+        (_mirrorEulerAngles
+                ? (-(face.headEulerAngleX ?? 0.0) / 30.0)
+                : ((face.headEulerAngleX ?? 0.0) / 30.0))
+            .clamp(0.0, 1.0),
     };
   }
 
