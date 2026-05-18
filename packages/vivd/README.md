@@ -12,6 +12,10 @@
   100% on-device, offline, no API key needed. Privacy-first face verification.
 </p>
 
+<p align="center">
+  <img src="example/demo.gif" alt="Vivd face liveness detection demo" width="180" />
+</p>
+
 ---
 
 ## ✨ Features
