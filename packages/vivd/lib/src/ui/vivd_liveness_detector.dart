@@ -46,7 +46,7 @@ class VivdLivenessDetector extends StatefulWidget {
 
 class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
     with TickerProviderStateMixin {
-  late Vivd _vivd;
+  Vivd? _vivd;
   CameraServiceImpl? _camera;
   bool _initialized = false;
   bool _running = false;
@@ -80,7 +80,7 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
   @override
   void dispose() {
     _pulseController.dispose();
-    _vivd.dispose();
+    _vivd?.dispose();
     _camera?.dispose();
     super.dispose();
   }
@@ -91,7 +91,7 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
       await _camera!.initialize();
 
       _vivd = Vivd(config: widget.config);
-      await _vivd.initialize();
+      await _vivd!.initialize();
 
       if (mounted) {
         setState(() => _initialized = true);
@@ -131,7 +131,7 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
     try {
       await _camera!.start();
 
-      final result = await _vivd.startLiveness(
+      final result = await _vivd!.startLiveness(
         frameStream: _camera!.frameStream,
         actions: widget.config?.actions,
         onProgress: (action, index, total) {
@@ -209,11 +209,17 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
     _log('[Vivd] Restart: start');
 
     // Skip dispose — ML Kit close() hangs. Just replace.
+    // Attempt safe dispose of old instance with timeout
+    final oldVivd = _vivd;
+    if (oldVivd != null) {
+      oldVivd.dispose().timeout(const Duration(seconds: 1)).catchError((_) {});
+    }
+
     _vivd = Vivd(config: widget.config);
     _log('[Vivd] Restart: new Vivd created');
 
     try {
-      await _vivd.initialize();
+      await _vivd!.initialize();
       _log('[Vivd] Restart: initialized');
     } catch (e) {
       _log('[Vivd] Restart: init error: $e');

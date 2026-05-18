@@ -90,7 +90,7 @@ class LivenessEngine {
         : 0.0;
 
     // Pass if majority of actions passed and overall score is decent
-    final isLive = passed >= 1 && overallScore > 0.3;
+    final isLive = passed >= 1 && overallScore > actionPassThreshold;
 
     return LivenessResult(
       isLive: isLive,
