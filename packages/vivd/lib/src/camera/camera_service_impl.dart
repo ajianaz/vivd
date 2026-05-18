@@ -22,6 +22,7 @@ class CameraServiceImpl extends CameraService {
   bool _isRunning = false;
   int _width = 0;
   int _height = 0;
+  int _sensorOrientation = 0;
   bool _disposed = false;
 
   /// The underlying camera controller for preview rendering.
@@ -47,7 +48,7 @@ class CameraServiceImpl extends CameraService {
 
     _controller = cam.CameraController(
       front,
-      cam.ResolutionPreset.high,
+      cam.ResolutionPreset.medium,
       enableAudio: false,
       imageFormatGroup: cam.ImageFormatGroup.yuv420,
     );
@@ -66,9 +67,17 @@ class CameraServiceImpl extends CameraService {
 
     final size = _controller!.value.previewSize;
     if (size != null) {
-      _width = size.width.toInt();
-      _height = size.height.toInt();
+      // Camera sensor outputs in landscape; swap for portrait preview.
+      _width = size.height.toInt();
+      _height = size.width.toInt();
     }
+
+    _sensorOrientation = front.sensorOrientation;
+
+    debugPrint('[Vivd] Camera: ${front.name} '
+        'sensorOrientation=$_sensorOrientation '
+        'previewSize=${size?.width}x${size?.height} '
+        'lensDirection=${front.lensDirection}');
 
     _frameController = StreamController<CameraFrame>.broadcast();
   }
@@ -145,11 +154,33 @@ class CameraServiceImpl extends CameraService {
     final bytes = _convertCameraImage(image);
     if (bytes == null) return;
 
+    // Determine source format to know if conversion happened.
+    final srcFormat = _detectFormat(image);
+    // After _convertCameraImage, all Android formats become NV21.
+    // BGRA8888 (iOS) stays BGRA8888.
+    final outputFormat = srcFormat == VivdImageFormat.bgra8888
+        ? VivdImageFormat.bgra8888
+        : VivdImageFormat.nv21;
+
+    // Log first frame info
+    if (_frameController!.hasListener && !_frameController!.isClosed) {
+      final yPlane = image.planes.isNotEmpty ? image.planes[0] : null;
+      if (yPlane != null && image.width > 0) {
+        debugPrint('[Vivd] Frame: ${image.width}x${image.height} '
+            'format=0x${image.format.raw.toRadixString(16)} '
+            'yStride=${yPlane.bytesPerRow} '
+            'planes=${image.planes.length} '
+            'rotation=$_sensorOrientation '
+            'bytesLen=${bytes.length}');
+      }
+    }
+
     final frame = CameraFrame(
       bytes: bytes,
       width: image.width,
       height: image.height,
-      format: _detectFormat(image),
+      format: outputFormat,
+      rotation: _sensorOrientation,
       timestamp: DateTime.now().millisecondsSinceEpoch,
     );
 
@@ -171,7 +202,8 @@ class CameraServiceImpl extends CameraService {
 
   /// Convert [cam.CameraImage] planes into a single [Uint8List].
   ///
-  /// For NV21 (Android): concatenate Y + VU planes.
+  /// Properly handles row stride and pixel stride for YUV420 on Android.
+  /// For NV21 (Android): concatenate Y + VU planes (stride-aware).
   /// For BGRA8888 (iOS): use the single plane directly.
   Uint8List? _convertCameraImage(cam.CameraImage image) {
     try {
@@ -183,32 +215,72 @@ class CameraServiceImpl extends CameraService {
         return Uint8List.fromList(image.planes.first.bytes);
       }
 
-      // Android: NV21 = Y plane + interleaved VU plane
-      // Or YUV420 = Y + U + V separate planes
       final planes = image.planes;
       if (planes.isEmpty) return null;
 
+      final width = image.width;
+      final height = image.height;
       final yPlane = planes[0];
-      final totalSize = image.width * image.height * 3 ~/ 2;
+      final yRowStride = yPlane.bytesPerRow;
+      final yPixelStride = yPlane.bytesPerRow ~/ width;
+
+      final totalSize = width * height * 3 ~/ 2;
       final bytes = Uint8List(totalSize);
 
-      // Copy Y plane
-      bytes.setRange(0, yPlane.bytes.length, yPlane.bytes);
+      // Copy Y plane — strip row padding
+      if (yRowStride == width) {
+        bytes.setRange(0, width * height, yPlane.bytes);
+      } else {
+        for (var row = 0; row < height; row++) {
+          final srcStart = row * yRowStride;
+          bytes.setRange(
+            row * width,
+            row * width + width,
+            yPlane.bytes.sublist(srcStart, srcStart + width),
+          );
+        }
+      }
 
       if (planes.length >= 3 && format == VivdImageFormat.yuv420) {
-        // YUV420: interleave U and V into NV21 format
+        // YUV420: interleave V and U into NV21 format (stride-aware)
         final uPlane = planes[1];
         final vPlane = planes[2];
-        var uvIndex = yPlane.bytes.length;
+        final uvRowStride = uPlane.bytesPerRow;
+        final uvPixelStride = uPlane.bytesPerPixel ?? 1;
+        final uvHeight = height ~/ 2;
+        final uvWidth = width ~/ 2;
 
-        for (var i = 0; i < uPlane.bytes.length; i++) {
-          bytes[uvIndex++] = vPlane.bytes[i];
-          bytes[uvIndex++] = uPlane.bytes[i];
+        var uvIndex = width * height;
+        for (var row = 0; row < uvHeight; row++) {
+          for (var col = 0; col < uvWidth; col++) {
+            final srcIdx = row * uvRowStride + col * uvPixelStride;
+            if (srcIdx < vPlane.bytes.length && srcIdx < uPlane.bytes.length) {
+              bytes[uvIndex++] = vPlane.bytes[srcIdx]; // V first (NV21 = VU)
+              bytes[uvIndex++] = uPlane.bytes[srcIdx]; // U second
+            }
+          }
         }
       } else if (planes.length >= 2) {
-        // NV21: Y + VU plane (already interleaved)
+        // NV21: Y + VU plane (already interleaved, strip padding)
         final vuPlane = planes[1];
-        bytes.setRange(yPlane.bytes.length, totalSize, vuPlane.bytes);
+        final vuRowStride = vuPlane.bytesPerRow;
+        final uvHeight = height ~/ 2;
+        final uvWidth = width;
+
+        if (vuRowStride == uvWidth) {
+          bytes.setRange(width * height, totalSize, vuPlane.bytes);
+        } else {
+          var dstIdx = width * height;
+          for (var row = 0; row < uvHeight; row++) {
+            final srcStart = row * vuRowStride;
+            bytes.setRange(
+              dstIdx,
+              dstIdx + uvWidth,
+              vuPlane.bytes.sublist(srcStart, srcStart + uvWidth),
+            );
+            dstIdx += uvWidth;
+          }
+        }
       }
 
       return bytes;

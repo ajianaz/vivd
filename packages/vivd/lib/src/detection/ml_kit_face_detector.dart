@@ -72,13 +72,17 @@ class MlKitFaceDetector implements FaceDetectorInterface {
           'MlKitFaceDetector not initialized. Call initialize() first.');
     }
 
+    // For NV21/YUV420 after stride-stripping, bytesPerRow equals width.
+    // For BGRA8888, bytesPerRow = width * 4.
+    final bytesPerRow = format == VivdImageFormat.bgra8888 ? width * 4 : width;
+
     final inputImage = InputImage.fromBytes(
       bytes: bytes,
       metadata: InputImageMetadata(
         size: Size(width.toDouble(), height.toDouble()),
         rotation: _toInputImageRotation(rotation),
         format: _toInputImageFormat(format),
-        bytesPerRow: width,
+        bytesPerRow: bytesPerRow,
       ),
     );
 

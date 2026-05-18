@@ -140,6 +140,7 @@ class Vivd {
       actionTimeoutMs: _config.actionTimeoutMs,
       actionPassThreshold: _config.actionPassThreshold,
     );
+    await _livenessEngine!.initialize();
 
     // Face identity
     _faceIdentity = FaceIdentity();
