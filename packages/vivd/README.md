@@ -27,17 +27,47 @@
 | 🛡️ **Anti-Spoof Stub** | Basic texture analysis (ML PAD planned for Pro) |
 | 🔌 **Pluggable Detection** | `FaceDetectorInterface` — swap ML Kit, MediaPipe, etc. |
 
-## 🚀 Quick Start
+---
 
-### 1. Add dependency
+## 📦 Install
+
+```bash
+flutter pub add vivd
+```
+
+Or add to `pubspec.yaml`:
 
 ```yaml
-# pubspec.yaml
 dependencies:
   vivd: ^0.0.1
 ```
 
-### 2. Drop-in widget
+### Platform Setup
+
+#### Android
+
+Add camera permission to `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+```
+
+**Min SDK:** 21 (Android 5.0) — configured in the plugin.
+
+#### iOS
+
+Add camera permission to `ios/Runner/Info.plist`:
+
+```xml
+<key>NSCameraUsageDescription</key>
+<string>Camera access is required for face liveness verification.</string>
+```
+
+---
+
+## 🚀 Quick Start
+
+### Drop-in Widget
 
 ```dart
 import 'package:vivd/vivd.dart';
@@ -51,7 +81,7 @@ VivdLivenessDetector(
 )
 ```
 
-### 3. Advanced usage
+### Programmatic API
 
 ```dart
 import 'package:vivd/vivd.dart';
@@ -64,7 +94,6 @@ final vivd = Vivd(config: VivdConfig(
 
 await vivd.initialize();
 
-// Liveness check
 final result = await vivd.startLiveness(
   frameStream: camera.frameStream,
   onProgress: (action, index, total) {
@@ -76,42 +105,140 @@ print('Live: ${result.isLive}');
 print('Score: ${result.score}');
 print('Actions: ${result.passedActions}/${result.totalActions}');
 
-// Face identity
-final reg = await vivd.registerFace(faceBytes, label: 'employee_001');
-final match = await vivd.identifyFace(faceBytes);
-print('Match: ${match?.label} (${match?.score})');
-
 await vivd.dispose();
 ```
+
+### Face Identity
+
+```dart
+// Register a face
+await vivd.registerFace(faceBytes, label: 'employee_001');
+
+// Identify a face
+final match = await vivd.identifyFace(faceBytes);
+if (match != null) {
+  print('Match: ${match.label} (${match.score})');
+}
+
+// List / remove
+vivd.listFaces();
+vivd.removeFace('employee_001');
+```
+
+---
 
 ## 🎮 Liveness Actions
 
 | Action | Trigger | Est. Duration |
 |--------|---------|---------------|
-| 👁️ Blink | Both eyes close (< 0.3 openness) | 800ms |
-| 😊 Smile | Smile probability > 0.7 | 1200ms |
-| ⬅️ Head Turn Left | Euler Y < -20° | 1500ms |
-| ➡️ Head Turn Right | Euler Y > 20° | 1500ms |
-| ⬆️ Look Up | Euler X < -15° | 1000ms |
-| ⬇️ Look Down | Euler X > 15° | 1000ms |
+| 👁️ Blink | Both eyes close (< 0.3 openness) | 1000ms |
+| 😊 Smile | Smile probability > 0.6 | 2000ms |
+| 👈 Head Turn Left | Euler Y < -18° | 2500ms |
+| 👉 Head Turn Right | Euler Y > 18° | 2500ms |
+| ⬆️ Look Up | Euler X < -14° | 1500ms |
+| ⬇️ Look Down | Euler X > 14° | 1500ms |
 
 Actions are **shuffled randomly** each session (Fisher-Yates with `Random.secure`) to prevent replay attacks.
+
+---
 
 ## 🔧 Configuration
 
 ```dart
 VivdConfig(
-  actions: [VivdAction.blink, VivdAction.smile],  // Default
+  actions: [VivdAction.blink, VivdAction.smile],  // Default actions
   minConfirmationFrames: 3,       // Frames to confirm an action
-  maxSessionDurationMs: 30000,    // Max total session time
-  actionTimeoutMs: 10000,         // Timeout per action
-  actionPassThreshold: 0.7,       // Min confidence to pass
+  maxSessionDurationMs: 60000,    // Max total session time (60s)
+  actionTimeoutMs: 15000,         // Timeout per action (15s)
+  actionPassThreshold: 0.6,       // Min confidence to pass
   enableAntiSpoof: false,         // Enable texture analysis
   hmacKey: '',                    // Empty = no session signing
-  sessionDurationSeconds: 300,    // HMAC session validity
+  sessionDurationSeconds: 300,    // HMAC session validity (5min)
   faceDetector: null,             // null = ML Kit default
+  sensorOrientation: 270,         // Front camera portrait rotation
 )
 ```
+
+> **Note:** `sensorOrientation` corrects euler angle signs for front camera portrait mode. Default `270` works for most Android devices. Set to `0` or `90` for non-standard setups.
+
+---
+
+## 📐 API Reference
+
+### `Vivd` — Core Facade
+
+```dart
+class Vivd {
+  Vivd({VivdConfig? config});
+  Future<void> initialize();
+  Future<LivenessResult> startLiveness({
+    required Stream<CameraFrame> frameStream,
+    List<VivdAction>? actions,
+    VivdProgressCallback? onProgress,
+  });
+  Future<FaceIdResult> registerFace(dynamic faceBytes, {required String label});
+  Future<FaceIdResult?> identifyFace(dynamic faceBytes, {double threshold = 0.6});
+  bool removeFace(String faceId);
+  List<Map<String, dynamic>> listFaces();
+  bool verifySession(String signedPayloadJson);
+  Future<void> dispose();
+}
+```
+
+### `VivdConfig`
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `actions` | `List<VivdAction>` | `[blink, smile]` | Actions to challenge user with |
+| `minConfirmationFrames` | `int` | `3` | Frames to confirm an action |
+| `maxSessionDurationMs` | `int` | `60000` | Max total session time |
+| `actionTimeoutMs` | `int` | `15000` | Timeout per action |
+| `actionPassThreshold` | `double` | `0.6` | Min confidence to pass |
+| `enableAntiSpoof` | `bool` | `false` | Enable texture analysis |
+| `hmacKey` | `String` | `''` | HMAC key (empty = no signing) |
+| `sessionDurationSeconds` | `int` | `300` | HMAC session validity |
+| `faceDetector` | `FaceDetectorInterface?` | `null` | Custom detector (null = ML Kit) |
+| `sensorOrientation` | `int` | `270` | Camera sensor orientation (degrees) |
+
+### `LivenessResult`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isLive` | `bool` | Whether liveness check passed |
+| `score` | `double` | Confidence score (0.0 - 1.0) |
+| `sessionId` | `String?` | Session ID (if HMAC enabled) |
+| `actions` | `List<ActionDetail>` | Per-action breakdown |
+| `antiSpoofScore` | `double?` | Anti-spoof score (if enabled) |
+| `durationMs` | `int?` | Total session duration |
+| `passedActions` | `int` | Number of passed actions |
+| `totalActions` | `int` | Total number of actions |
+| `allActionsPassed` | `bool` | Whether all actions passed |
+
+### `VivdAction` (enum)
+
+| Value | Label | Instruction |
+|-------|-------|-------------|
+| `blink` | Blink | Close both eyes |
+| `smile` | Smile | Show your teeth |
+| `headTurnLeft` | Turn Left | Turn head to the left |
+| `headTurnRight` | Turn Right | Turn head to the right |
+| `lookUp` | Look Up | Raise your chin |
+| `lookDown` | Look Down | Lower your chin |
+
+### `VivdLivenessDetector` — Drop-in Widget
+
+```dart
+VivdLivenessDetector({
+  VivdConfig? config,
+  void Function(LivenessResult result)? onResult,
+  void Function(VivdAction action, int index, int total)? onProgress,
+  CameraDescription? camera,
+  ResolutionPreset? resolution,
+  bool? enableAudio,
+})
+```
+
+---
 
 ## 📐 Architecture
 
@@ -126,9 +253,17 @@ lib/
 │   ├── ml/              AntiSpoofEngine (texture analysis)
 │   ├── models/          VivdAction, LivenessResult, FaceIdResult
 │   ├── ui/              VivdLivenessDetector widget
-│   └── vivd.dart        Core Vivd facade
+│   └── vivd.dart        Core Vivd facade + VivdConfig
 └── vivd.dart            Package entry point
 ```
+
+**Detection:** Google ML Kit Face Detection — provides face landmarks (eyes, mouth, head pose) used to detect liveness actions. 100% on-device, no API key needed.
+
+**Liveness:** Active challenge-response — user performs random actions, ML Kit landmarks are checked against thresholds. Fisher-Yates shuffled each session to prevent replay.
+
+**Anti-spoof:** Basic texture variance analysis (Laplacian). ML PAD planned for Pro tier.
+
+---
 
 ## 🧪 Run Example
 
@@ -137,6 +272,8 @@ cd example
 flutter pub get
 flutter run  # Requires physical device (camera)
 ```
+
+---
 
 ## 📄 License
 
