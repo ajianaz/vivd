@@ -115,7 +115,7 @@ VivdConfig(
 
 ## 📐 Architecture
 
-```
+```text
 lib/
 ├── src/
 │   ├── camera/          CameraService, FrameProcessor, CameraValidator

@@ -7,7 +7,7 @@ Minimal integration example for the Vivd face liveness SDK.
 1. Ensure Flutter 3.29.0+ is installed
 2. Navigate to this directory:
    ```bash
-   cd examples/basic
+   cd packages/vivd/example
    ```
 3. Get dependencies:
    ```bash
@@ -21,7 +21,7 @@ Minimal integration example for the Vivd face liveness SDK.
 ## What This Demonstrates
 
 - Drop-in `VivdLivenessDetector` widget
-- Default config (blink + smile)
+- Explicit 6-action config (blink, smile, head turns, look up/down)
 - Automatic camera initialization
 - Real-time action progress
 - Result display with score

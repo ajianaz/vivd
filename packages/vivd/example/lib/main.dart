@@ -56,7 +56,7 @@ class LivenessScreen extends StatelessWidget {
               '(score: ${result.score})');
         },
         onProgress: (action, index, total) {
-          debugPrint('Progress: ${action.label} ($index/$total)');
+          debugPrint('Progress: ${action.label} (${index + 1}/$total)');
         },
       ),
     );
