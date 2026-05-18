@@ -182,7 +182,7 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
   bool _restarting = false;
 
   void restart() {
-    if (_restarting) return; // guard against multiple taps
+    if (_restarting) return;
     _restarting = true;
     _log('[Vivd] Restarting...');
 
@@ -196,34 +196,36 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
       _totalActions = 0;
       _actionCompleted.clear();
       _actionResults.clear();
-      _initialized = false;
     });
 
-    // Capture old references, null out immediately.
-    final oldCamera = _camera;
-    final oldVivd = _vivd;
-    _camera = null;
-
-    // Await cleanup THEN init — prevents camera device conflict.
-    _doCleanupAndInit(oldCamera, oldVivd);
+    _doRestart();
   }
 
-  Future<void> _doCleanupAndInit(
-    CameraServiceImpl? oldCamera,
-    Vivd oldVivd,
-  ) async {
-    // 1. Fully release old camera first — with timeouts to prevent hanging.
-    try { await oldCamera?.stop().timeout(const Duration(seconds: 2)); } catch (_) {}
-    try { await oldCamera?.dispose().timeout(const Duration(seconds: 2)); } catch (_) {}
-    try { await oldVivd.dispose().timeout(const Duration(seconds: 2)); } catch (_) {}
-    _log('[Vivd] Old resources released');
+  Future<void> _doRestart() async {
+    // Dispose old Vivd engine only (lightweight — no camera involved).
+    try { _vivd.dispose(); } catch (_) {}
 
-    // 2. Small delay to let platform camera service fully release.
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Create fresh Vivd engine.
+    _vivd = Vivd(config: widget.config);
+    try {
+      await _vivd.initialize();
+    } catch (e) {
+      _log('[Vivd] Restart init error: $e');
+      if (mounted) {
+        setState(() {
+          _restarting = false;
+          _error = e.toString();
+        });
+      }
+      return;
+    }
 
-    // 3. Fresh init.
+    _log('[Vivd] Restart ready, starting session...');
     _restarting = false;
-    if (mounted) await _init();
+
+    if (mounted) {
+      _startLiveness();
+    }
   }
 
   @override
