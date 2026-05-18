@@ -124,8 +124,8 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
     final actionCount = widget.config?.actions.length ?? 2;
     setState(() {
       _running = true;
-      _actionCompleted = List.filled(actionCount, false);
-      _actionResults = List.filled(actionCount, null);
+      _actionCompleted = List.generate(actionCount, (_) => false);
+      _actionResults = List.generate(actionCount, (_) => null);
     });
 
     try {
