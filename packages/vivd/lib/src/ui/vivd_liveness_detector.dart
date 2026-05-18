@@ -184,41 +184,39 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
   void restart() {
     if (_restarting) return;
     _restarting = true;
-    _log('[Vivd] Restarting...');
+    _log('[Vivd] Restart tapped');
 
-    setState(() {
-      _running = false;
-      _completed = false;
-      _result = null;
-      _error = null;
-      _currentAction = null;
-      _actionIndex = 0;
-      _totalActions = 0;
-      _actionCompleted.clear();
-      _actionResults.clear();
+    // Schedule restart AFTER current frame completes.
+    // Using scheduleMicrotask ensures setState doesn't block async execution.
+    scheduleMicrotask(() {
+      if (!mounted) return;
+      setState(() {
+        _running = false;
+        _completed = false;
+        _result = null;
+        _error = null;
+        _currentAction = null;
+        _actionIndex = 0;
+        _totalActions = 0;
+        _actionCompleted.clear();
+        _actionResults.clear();
+      });
+      _doRestart();
     });
-
-    _doRestart();
   }
 
   Future<void> _doRestart() async {
-    _log('[Vivd] Restart: disposing old Vivd...');
-    try {
-      _vivd.dispose();
-      _log('[Vivd] Restart: old Vivd disposed');
-    } catch (e) {
-      _log('[Vivd] Restart: Vivd dispose error: $e');
-    }
+    _log('[Vivd] Restart: start');
 
-    _log('[Vivd] Restart: creating new Vivd...');
+    // Skip dispose — ML Kit close() hangs. Just replace.
     _vivd = Vivd(config: widget.config);
+    _log('[Vivd] Restart: new Vivd created');
 
     try {
-      _log('[Vivd] Restart: initializing new Vivd...');
       await _vivd.initialize();
-      _log('[Vivd] Restart: Vivd initialized OK');
+      _log('[Vivd] Restart: initialized');
     } catch (e) {
-      _log('[Vivd] Restart init error: $e');
+      _log('[Vivd] Restart: init error: $e');
       if (mounted) {
         setState(() {
           _restarting = false;
@@ -228,14 +226,9 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
       return;
     }
 
-    _log('[Vivd] Restart ready, calling _startLiveness...');
     _restarting = false;
-
-    if (mounted) {
-      _startLiveness();
-    } else {
-      _log('[Vivd] Restart: widget not mounted, aborting');
-    }
+    _log('[Vivd] Restart: starting session');
+    if (mounted) _startLiveness();
   }
 
   @override
@@ -522,150 +515,149 @@ class _VivdLivenessDetectorState extends State<VivdLivenessDetector>
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Result icon with scale animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.elasticOut,
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isLive
+                              ? Colors.green.withValues(alpha: 0.15)
+                              : Colors.red.withValues(alpha: 0.15),
+                        ),
+                        child: Icon(
+                          isLive ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                          size: 64,
+                          color: isLive ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Result icon
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.elasticOut,
-                          builder: (context, scale, child) {
-                            return Transform.scale(
-                              scale: scale,
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isLive
-                                      ? Colors.green.withValues(alpha: 0.15)
-                                      : Colors.red.withValues(alpha: 0.15),
-                                ),
-                                child: Icon(
-                                  isLive ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                                  size: 56,
-                                  color: isLive ? Colors.green : Colors.red,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-                        // Result text
-                        Text(
-                          isLive ? 'Verified!' : 'Verification Failed',
-                          style: TextStyle(
-                            color: isLive ? Colors.green : Colors.red,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
+                // Result text
+                Text(
+                  isLive ? 'Verified!' : 'Verification Failed',
+                  style: TextStyle(
+                    color: isLive ? Colors.green : Colors.red,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
 
-                        // Score
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white10,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Score: ${(result.score * 100).toStringAsFixed(1)}%',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Action breakdown chips
-                        if (result.actions.isNotEmpty) ...[
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            alignment: WrapAlignment.center,
-                            children: result.actions.map((a) {
-                              final passed = a.passed;
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: passed
-                                      ? Colors.green.withValues(alpha: 0.12)
-                                      : Colors.red.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: passed
-                                        ? Colors.green.withValues(alpha: 0.3)
-                                        : Colors.red.withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      passed ? Icons.check_circle : Icons.cancel,
-                                      size: 16,
-                                      color: passed ? Colors.green : Colors.red,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '${a.action.emoji} ${a.action.label}',
-                                      style: TextStyle(
-                                        color: passed ? Colors.greenAccent : Colors.redAccent,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-
-                        const Spacer(),
-
-                        // Retry button — always visible at bottom
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: restart,
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('Try Again'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white10,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                // Score
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Score: ${(result.score * 100).toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+                const SizedBox(height: 24),
+
+                // Action breakdown
+                if (result.actions.isNotEmpty) ...[
+                  const Text(
+                    'Actions',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: result.actions.map((a) {
+                      final passed = a.passed;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: passed
+                              ? Colors.green.withValues(alpha: 0.12)
+                              : Colors.red.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: passed
+                                ? Colors.green.withValues(alpha: 0.3)
+                                : Colors.red.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              passed ? Icons.check_circle : Icons.cancel,
+                              size: 16,
+                              color: passed ? Colors.green : Colors.red,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${a.action.emoji} ${a.action.label}',
+                              style: TextStyle(
+                                color: passed ? Colors.greenAccent : Colors.redAccent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+
+                const SizedBox(height: 40),
+
+                // Retry button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: restart,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Try Again'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white10,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -280,7 +280,6 @@ class Vivd {
 
   /// Dispose all resources.
   Future<void> dispose() async {
-    _log('[Vivd] Vivd.dispose() called');
     await _faceDetector?.dispose();
     await _antiSpoofEngine?.dispose();
     _livenessEngine = null;
@@ -291,7 +290,6 @@ class Vivd {
     _cameraValidator = null;
     _frameProcessor = null;
     _initialized = false;
-    _log('[Vivd] Vivd.dispose() done');
   }
 
   void _ensureInitialized() {
@@ -299,9 +297,4 @@ class Vivd {
       throw StateError('Vivd not initialized. Call initialize() first.');
     }
   }
-}
-
-void _log(String message) {
-  // ignore: avoid_print
-  print(message);
 }
