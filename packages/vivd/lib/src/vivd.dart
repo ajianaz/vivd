@@ -26,6 +26,7 @@ class VivdConfig {
     this.hmacKey = '',
     this.sessionDurationSeconds = 300,
     this.faceDetector,
+    this.sensorOrientation = 270,
   });
 
   /// Actions to challenge the user with.
@@ -54,6 +55,11 @@ class VivdConfig {
 
   /// Custom face detector. Uses ML Kit by default.
   final FaceDetectorInterface? faceDetector;
+
+  /// Camera sensor orientation in degrees.
+  /// Defaults to 270 (common for front camera in portrait mode).
+  /// Affects euler angle sign correction for head pose detection.
+  final int sensorOrientation;
 }
 
 /// Callback for liveness progress updates.
@@ -139,6 +145,7 @@ class Vivd {
       maxSessionDurationMs: _config.maxSessionDurationMs,
       actionTimeoutMs: _config.actionTimeoutMs,
       actionPassThreshold: _config.actionPassThreshold,
+      sensorOrientation: _config.sensorOrientation,
     );
     await _livenessEngine!.initialize();
 
