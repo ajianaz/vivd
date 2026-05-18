@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="example/demo.gif" alt="Vivd face liveness detection demo" width="220" />
+  <img src="example/demo.gif" alt="Vivd face liveness detection demo" width="180" />
 </p>
 
 ---
