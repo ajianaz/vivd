@@ -2,6 +2,12 @@
 
 Comprehensive example demonstrating all Vivd SDK features.
 
+<p align="center">
+  <img src="../../assets/demo_wm.gif" alt="Vivd advanced example demo" width="180" />
+</p>
+
+> ⚠️ **Demo di-watermark dan diberi overlay kotak untuk keamanan data pribadi.** Wajah asli tidak ditampilkan demi privasi.
+
 ## Setup
 
 1. Ensure Flutter 3.29.0+ is installed

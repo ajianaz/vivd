@@ -13,6 +13,12 @@
   100% on-device, offline, no API key needed. Privacy-first face verification.
 </p>
 
+<p align="center">
+  <img src="assets/demo_wm.gif" alt="Vivd face liveness detection demo" width="180" />
+</p>
+
+> ⚠️ **Demo di-watermark dan diberi overlay kotak untuk keamanan data pribadi.** Wajah asli tidak ditampilkan demi privasi.
+
 ---
 
 ## ✨ Features
