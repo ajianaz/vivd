@@ -6,7 +6,7 @@ Minimal integration example for the Vivd face liveness SDK.
   <img src="../../assets/demo_wm.gif" alt="Vivd basic example demo" width="180" />
 </p>
 
-> ⚠️ **Demo di-watermark dan diberi overlay kotak untuk keamanan data pribadi.** Wajah asli tidak ditampilkan demi privasi.
+> ⚠️ **Demo is watermarked and overlaid with a privacy box for data protection.** Actual face is not shown.
 
 ## Setup
 

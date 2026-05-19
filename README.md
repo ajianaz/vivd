@@ -17,7 +17,7 @@
   <img src="assets/demo_wm.gif" alt="Vivd face liveness detection demo" width="180" />
 </p>
 
-> ⚠️ **Demo di-watermark dan diberi overlay kotak untuk keamanan data pribadi.** Wajah asli tidak ditampilkan demi privasi.
+> ⚠️ **Demo is watermarked and overlaid with a privacy box for data protection.** Actual face is not shown.
 
 ---
 
