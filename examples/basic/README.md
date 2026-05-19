@@ -2,6 +2,12 @@
 
 Minimal integration example for the Vivd face liveness SDK.
 
+<p align="center">
+  <img src="../../assets/demo_wm.gif" alt="Vivd basic example demo" width="180" />
+</p>
+
+> ⚠️ **Demo is watermarked and overlaid with a privacy box for data protection.** Actual face is not shown.
+
 ## Setup
 
 1. Ensure Flutter 3.29.0+ is installed

@@ -16,6 +16,8 @@
   <img src="example/demo.gif" alt="Vivd face liveness detection demo" width="180" />
 </p>
 
+> ⚠️ **Demo is watermarked and overlaid with a privacy box for data protection.** Actual face is not shown.
+
 ---
 
 ## ✨ Features
