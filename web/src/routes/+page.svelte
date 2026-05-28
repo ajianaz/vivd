@@ -3,14 +3,15 @@
 	import gsap from 'gsap';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 	import {
-		Eye, Shield, Smartphone, Lock, Package, Cpu,
-		ArrowRight, Check, X, Github, BookOpen,
+		Eye, Shield, Smartphone, Lock, Package, Cpu, Fingerprint,
+		ScanFace, ArrowRight, Check, X, Github, BookOpen,
 		Zap, Server, Clock, Users
 	} from 'lucide-svelte';
 
 	gsap.registerPlugin(ScrollTrigger);
 
 	let heroRef: HTMLElement;
+	let demoRef: HTMLElement;
 	let featuresRef: HTMLElement;
 	let codeRef: HTMLElement;
 	let compareRef: HTMLElement;
@@ -20,8 +21,8 @@
 	const features = [
 		{
 			icon: Eye,
-			title: '4 Liveness Actions',
-			desc: 'Blink, smile, head turn left, head turn right — multi-challenge verification.',
+			title: '6 Liveness Actions',
+			desc: 'Blink, smile, head turn left/right, look up/down — multi-challenge verification with Fisher-Yates shuffle.',
 			color: 'from-indigo-500 to-blue-500'
 		},
 		{
@@ -44,43 +45,52 @@
 		},
 		{
 			icon: Package,
-			title: 'Zero Dependencies',
-			desc: 'Works offline with no external packages. Pure Flutter implementation.',
+			title: 'Lightweight',
+			desc: 'Minimal deps — camera, ML Kit, crypto. No heavy frameworks.',
 			color: 'from-cyan-500 to-blue-500'
 		},
 		{
-			icon: Cpu,
-			title: 'ML Kit Ready',
-			desc: 'FaceDetectorInterface abstraction for pluggable face detection backends.',
+			icon: Fingerprint,
+			title: 'Face ID',
+			desc: 'Built-in face registration and identification (up to 20 faces). Adaptive template blending.',
 			color: 'from-rose-500 to-red-500'
+		},
+		{
+			icon: ScanFace,
+			title: 'Anti-Spoof',
+			desc: 'Heuristic texture analysis with 7-signal weighted composite. ML PAD planned for Pro.',
+			color: 'from-teal-400 to-cyan-500'
 		}
 	];
 
 	const comparisons = [
 		{ feature: 'Integration Time', vivd: '~10 min', inhouse: '3–6 months', competitor: '1–2 weeks' },
-		{ feature: 'Liveness Actions', vivd: '4 actions', inhouse: 'Custom', competitor: '2–3 actions' },
+		{ feature: 'Liveness Actions', vivd: '6 actions', inhouse: 'Custom', competitor: '2–3 actions' },
 		{ feature: 'On-Device', vivd: true, inhouse: true, competitor: false },
 		{ feature: 'Offline Support', vivd: true, inhouse: true, competitor: false },
 		{ feature: 'No API Key', vivd: true, inhouse: true, competitor: false },
-		{ feature: 'Zero Dependencies', vivd: true, inhouse: false, competitor: false },
+		{ feature: 'Lightweight Deps', vivd: true, inhouse: false, competitor: false },
 		{ feature: 'Session Signing', vivd: true, inhouse: 'Optional', competitor: false },
 		{ feature: 'Face ID (20 faces)', vivd: true, inhouse: 'Custom', competitor: false },
+		{ feature: 'Anti-Spoof', vivd: true, inhouse: 'Optional', competitor: false },
 		{ feature: 'Open Source', vivd: true, inhouse: true, competitor: false },
 		{ feature: 'Price', vivd: 'Free', inhouse: '$50K+', competitor: '$$/mo' }
 	];
 
 	const stats = [
 		{ value: '100%', label: 'On-Device', icon: Smartphone },
-		{ value: '0', label: 'Dependencies', icon: Package },
-		{ value: '4', label: 'Liveness Actions', icon: Eye },
-		{ value: '20', label: 'Faces Stored', icon: Users }
+		{ value: '6', label: 'Liveness Actions', icon: Eye },
+		{ value: '20', label: 'Faces Stored', icon: Users },
+		{ value: '7', label: 'Spoof Signals', icon: ScanFace }
 	];
 
-	const codeHero = `<span class="text-gray-500">dependencies:</span>\n  <span class="text-indigo-400">vivd</span><span class="text-gray-500">:</span> <span class="text-emerald-400">^0.1.0</span>`;
+	const codeHero = `<span class="text-gray-500">dependencies:</span>\n  <span class="text-indigo-400">vivd</span><span class="text-gray-500">:</span> <span class="text-emerald-400">^0.0.1</span>`;
 
-	const codeQuickstart = `<span class="text-purple-400">import</span> <span class="text-emerald-400">'package:vivd/vivd.dart'</span>;\n<span class="text-gray-500">// Start liveness detection</span>\n<span class="text-purple-400">final</span> result = <span class="text-purple-400">await</span> <span class="text-indigo-400">Vivd</span>.<span class="text-cyan-400">startLiveness</span>(\n  actions: [\n    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">blink</span>,\n    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">smile</span>,\n  ],\n);\n\n<span class="text-purple-400">if</span> (result.<span class="text-cyan-400">isLive</span>) {\n  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Face verified!'</span>);\n  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Score: \${result.score}'</span>);\n}`;
+	const codeQuickstart = `<span class="text-purple-400">import</span> <span class="text-emerald-400">'package:vivd/vivd.dart'</span>;\n<span class="text-gray-500">// Start liveness detection</span>\n<span class="text-purple-400">final</span> result = <span class="text-purple-400">await</span> <span class="text-indigo-400">Vivd</span>.<span class="text-cyan-400">startLiveness</span>(\n  actions: [\n    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">blink</span>,\n    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">smile</span>,\n    <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">headTurnLeft</span>,\n  ],\n);\n\n<span class="text-purple-400">if</span> (result.<span class="text-cyan-400">isLive</span>) {\n  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Face verified!'</span>);\n  <span class="text-indigo-400">print</span>(<span class="text-emerald-400">'Score: \${result.score}'</span>);\n}`;
 
 	const codePro = `<span class="text-purple-400">final</span> result = <span class="text-purple-400">await</span> <span class="text-indigo-400">VivdPro</span>.<span class="text-cyan-400">startLiveness</span>(\n  apiKey: <span class="text-emerald-400">'your-api-key'</span>,\n  actions: <span class="text-indigo-400">VivdAction</span>.<span class="text-cyan-400">all</span>,\n  enablePAD: <span class="text-amber-400">true</span>,\n);\n<span class="text-gray-500">// JWT-verified, server-signed result</span>`;
+
+	const navSections = ['#features', '#quickstart', '#compare', '#pro'];
 
 	onMount(() => {
 		const mm = gsap.matchMedia();
@@ -93,6 +103,19 @@
 			stagger: 0.15,
 			ease: 'power3.out',
 			delay: 0.2
+		});
+
+		// Demo phone fade in
+		gsap.from('[data-demo-phone]', {
+			scrollTrigger: {
+				trigger: demoRef,
+				start: 'top 80%',
+				toggleActions: 'play none none none'
+			},
+			y: 60,
+			opacity: 0,
+			duration: 1,
+			ease: 'power3.out'
 		});
 
 		// Feature cards stagger
@@ -163,12 +186,35 @@
 			ease: 'power2.out'
 		});
 
-		return () => mm.revert();
+		// Active nav link via IntersectionObserver
+		const navLinks = document.querySelectorAll('.nav-link');
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						const id = '#' + entry.target.id;
+						navLinks.forEach((link) => {
+							link.classList.toggle('active', link.getAttribute('href') === id);
+						});
+					}
+				});
+			},
+			{ rootMargin: '-20% 0px -60% 0px' }
+		);
+		navSections.forEach((sel) => {
+			const el = document.querySelector(sel);
+			if (el) observer.observe(el);
+		});
+
+		return () => {
+			mm.revert();
+			observer.disconnect();
+		};
 	});
 </script>
 
 <!-- ===== HERO ===== -->
-<section class="relative overflow-hidden pb-24 md:pb-32" bind:this={heroRef}>
+<section class="relative overflow-hidden pb-24 md:pb-32 hero-mesh" bind:this={heroRef}>
 	<!-- Background glow orbs -->
 	<div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-b from-indigo-500/10 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none"></div>
 	<div class="absolute top-40 -left-40 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -178,7 +224,7 @@
 		<!-- Badge -->
 		<div data-hero-fade class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/5 mb-8">
 			<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-			<span class="text-xs font-medium text-indigo-300">Open Source &bull; Apache 2.0 &bull; v0.1.0</span>
+			<span class="text-xs font-medium text-indigo-300">Open Source &bull; Apache 2.0 &bull; v0.0.1</span>
 		</div>
 
 		<!-- Headline -->
@@ -189,7 +235,7 @@
 
 		<!-- Subtitle -->
 		<p data-hero-fade class="mx-auto max-w-2xl text-base sm:text-lg text-gray-400 leading-relaxed mb-10">
-			Drop-in Flutter SDK for on-device face verification. No server, no API key, no dependencies.
+			Drop-in Flutter SDK for on-device face verification. No server, no API key, minimal dependencies.
 			Just <span class="text-gray-200 font-medium">blink, smile, and verify</span>.
 		</p>
 
@@ -213,11 +259,10 @@
 			</a>
 		</div>
 
-		<!-- Hero code preview -->
-		<div data-hero-fade class="mt-16 mx-auto max-w-lg">
+		<!-- Hero code previews (side by side) -->
+		<div data-hero-fade class="mt-16 mx-auto max-w-3xl grid sm:grid-cols-2 gap-4">
 			<div class="code-block rounded-2xl p-1 glow-indigo">
 				<div class="rounded-xl overflow-hidden">
-					<!-- Terminal header -->
 					<div class="flex items-center gap-2 px-4 py-3 border-b border-indigo-500/10">
 						<div class="flex gap-1.5">
 							<div class="w-3 h-3 rounded-full bg-red-500/60"></div>
@@ -226,10 +271,44 @@
 						</div>
 						<span class="text-[11px] text-gray-500 ml-2">pubspec.yaml</span>
 					</div>
-						<pre class="px-4 py-3 text-[13px] leading-6 overflow-x-auto"><code>{@html codeHero}</code></pre>
+					<pre class="px-4 py-3 text-[13px] leading-6 overflow-x-auto"><code>{@html codeHero}</code></pre>
+				</div>
+			</div>
+			<div class="code-block rounded-2xl p-1 glow-indigo">
+				<div class="rounded-xl overflow-hidden">
+					<div class="flex items-center gap-2 px-4 py-3 border-b border-indigo-500/10">
+						<div class="flex gap-1.5">
+							<div class="w-3 h-3 rounded-full bg-red-500/60"></div>
+							<div class="w-3 h-3 rounded-full bg-yellow-500/60"></div>
+							<div class="w-3 h-3 rounded-full bg-green-500/60"></div>
+						</div>
+						<span class="text-[11px] text-gray-500 ml-2">main.dart</span>
+					</div>
+					<pre class="px-4 py-3 text-[12px] leading-5 overflow-x-auto"><code>{@html codeQuickstart.split('\n').slice(0, 4).join('\n')}</code></pre>
 				</div>
 			</div>
 		</div>
+	</div>
+</section>
+
+<!-- ===== DEMO GIF ===== -->
+<section class="py-16 md:py-24" bind:this={demoRef}>
+	<div data-demo-phone class="mx-auto max-w-md px-6 flex flex-col items-center">
+		<!-- Phone mockup frame -->
+		<div class="relative rounded-[2.5rem] border-[3px] border-gray-700/80 bg-gray-900 p-2 phone-glow">
+			<!-- Notch -->
+			<div class="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-gray-900 rounded-b-2xl z-10"></div>
+			<!-- Screen -->
+			<div class="rounded-[2rem] overflow-hidden">
+				<img
+					src="demo.gif"
+					alt="Vivd liveness detection demo"
+					class="w-full max-w-[360px] h-auto block"
+					loading="lazy"
+				/>
+			</div>
+		</div>
+		<p class="mt-6 text-xs text-gray-500 text-center">Demo is watermarked for privacy protection</p>
 	</div>
 </section>
 
@@ -276,7 +355,7 @@
 					<div class="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-sm font-bold text-indigo-400">1</div>
 					<div>
 						<h3 class="text-base font-semibold text-white mb-1">Add the dependency</h3>
-						<p class="text-sm text-gray-400">Add <code class="text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-xs">vivd: ^0.1.0</code> to your pubspec.yaml.</p>
+						<p class="text-sm text-gray-400">Add <code class="text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-xs">vivd: ^0.0.1</code> to your pubspec.yaml.</p>
 					</div>
 				</div>
 
@@ -297,7 +376,7 @@
 				</div>
 
 				<div class="pt-2">
-					<a href="https://pub.dev/packages/vivd" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+					<a href="https://github.com/ajianaz/vivd" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
 						<BookOpen size={16} />
 						Read full documentation
 					</a>
@@ -369,7 +448,7 @@
 					{#each comparisons as row}
 						<tr class="compare-row border-b border-white/[0.03] transition-colors">
 							<td class="px-6 py-3.5 text-gray-300">{row.feature}</td>
-							<td class="px-6 py-3.5 text-center">
+							<td class="px-6 py-3.5 text-center vivd-col">
 								{#if typeof row.vivd === 'boolean'}
 									{#if row.vivd}
 										<Check size={16} class="inline text-emerald-400" />
@@ -421,6 +500,7 @@
 				<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-medium text-indigo-300 mb-6">
 					<Server size={12} />
 					Vivd Pro
+					<span class="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-medium text-amber-300">Coming Soon</span>
 				</span>
 
 				<h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Need server-backed verification?</h2>
@@ -447,7 +527,7 @@
 				</div>
 
 				<div class="flex flex-wrap gap-4">
-					<a href="https://pub.dev/packages/vivd_pro" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+					<a href="https://github.com/ajianaz/vivd" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
 						Learn about Pro
 						<ArrowRight size={15} />
 					</a>
@@ -470,13 +550,13 @@
 		</p>
 		<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
 			<a
-				href="https://pub.dev/packages/vivd"
+				href="https://github.com/ajianaz/vivd"
 				target="_blank"
 				rel="noopener"
-				class="group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40"
+				class="cta-glow group inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40"
 			>
-				<Package size={18} />
-				Install from pub.dev
+				<Github size={18} />
+				Get Started
 				<ArrowRight size={16} class="transition-transform group-hover:translate-x-0.5" />
 			</a>
 			<a
@@ -485,7 +565,7 @@
 				rel="noopener"
 				class="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-gray-300 hover:text-white font-semibold transition-all"
 			>
-				<Github size={18} />
+				<Package size={18} />
 				Star on GitHub
 			</a>
 		</div>
@@ -506,7 +586,7 @@
 			</div>
 			<div class="flex items-center gap-2 text-xs text-gray-500">
 				<Zap size={14} class="text-emerald-500/60" />
-				Zero Dependencies
+				Lightweight
 			</div>
 		</div>
 	</div>
