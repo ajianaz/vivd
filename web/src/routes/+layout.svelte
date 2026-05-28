@@ -29,9 +29,9 @@
 
 			<!-- Desktop Nav -->
 			<div class="hidden md:flex items-center gap-8">
-				{#each navLinks as link}
-					<a href={link.href} class="text-sm text-gray-400 hover:text-white transition-colors">{link.label}</a>
-				{/each}
+			{#each navLinks as link}
+				<a href={link.href} class="nav-link text-sm text-gray-400 hover:text-white transition-colors">{link.label}</a>
+			{/each}
 			</div>
 
 			<!-- Desktop CTA -->
