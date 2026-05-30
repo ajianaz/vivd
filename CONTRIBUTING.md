@@ -137,6 +137,7 @@ Use [GitHub Issues](https://github.com/ajianaz/vivd/issues) with:
 ## 💡 Architecture Notes
 
 - **Offline-first**: All processing happens on-device. No server required.
+- For detailed architecture and extension guides, see [docs/](docs/).
 - **Pluggable detection**: Implement `FaceDetectorInterface` to swap ML Kit, MediaPipe, etc.
 - **Security**: Use `VivdConfig.hmacKey` for session signing. All actions are shuffled per session.
 - **Widget-first**: `VivdLivenessDetector` provides a full UI. Use `Vivd` class directly for headless integration.
@@ -147,4 +148,14 @@ Be respectful, constructive, and inclusive. We're building this for the Indonesi
 
 ---
 
-**Questions?** Open a [Discussion](https://github.com/ajianaz/vivd/discussions) or ping us on [Discord](https://discord.gg/).
+**Questions?** Reach out via GitHub Issues or Discussions.
+
+## 🔒 Security Policy
+
+For responsible disclosure of security vulnerabilities, please see [SECURITY.md](SECURITY.md).
+
+## 🤝 Getting Help
+
+- **GitHub Discussions** — [community forum](https://github.com/ajianaz/vivd/discussions) for questions, ideas, and show-and-tell
+- **GitHub Issues** — [bug reports](https://github.com/ajianaz/vivd/issues) and feature requests
+- **Discord** — coming soon
