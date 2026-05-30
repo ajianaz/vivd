@@ -27,3 +27,9 @@ Thumbs.db
 
 # ONNX models (large, don't commit)
 *.onnx
+
+# Wrangler (Cloudflare)
+.wrangler/
+
+# Assets — working files only, not for repo
+assets/
